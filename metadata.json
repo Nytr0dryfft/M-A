@@ -1,0 +1,6 @@
+{
+  "name": "CERNE Atelier & Marcenaria Autoral",
+  "description": "Atelier de marcenaria de alta precisão especializado em pequenos móveis esculturais e tábuas gourmet em grão de topo (end-grain) com madeiras nobres brasileiras.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
