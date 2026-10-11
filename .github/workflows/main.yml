@@ -4,6 +4,7 @@ on:
   push:
     branches: [ principal ]
   workflow_dispatch:
+
 permissions:
   contents: read
   pages: write
@@ -23,7 +24,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-  run: npm install --no-package-lock
+        run: npm install --no-package-lock
 
       - name: Build project
         run: npm run build
