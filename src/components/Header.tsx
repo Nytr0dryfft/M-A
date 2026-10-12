@@ -138,63 +138,63 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-[#FAF8F5] border-b border-[#DFD3C3] px-6 py-6 space-y-4 shadow-xl">
-            <nav className="flex flex-col space-y-3">
+          <div className="lg:hidden bg-[#FAF8F5] border-b border-[#DFD3C3] px-5 py-4 space-y-3 shadow-xl">
+            <nav className="grid grid-cols-2 gap-2">
               <a
                 href="#catalogo"
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-xs uppercase tracking-widest text-[#1C1917] font-semibold py-1.5"
+                className="text-[11px] uppercase tracking-wider text-[#1C1917] font-semibold py-2 px-2.5 bg-white border border-[#DFD3C3]/70 truncate text-center"
               >
                 Coleções
               </a>
               <a
                 href="#tabuas"
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-xs uppercase tracking-widest text-[#1C1917] font-semibold py-1.5"
+                className="text-[11px] uppercase tracking-wider text-[#1C1917] font-semibold py-2 px-2.5 bg-white border border-[#DFD3C3]/70 truncate text-center"
               >
-                Tábuas de Corte
+                Tábuas
               </a>
               <a
                 href="#moveis"
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-xs uppercase tracking-widest text-[#1C1917] font-semibold py-1.5"
+                className="text-[11px] uppercase tracking-wider text-[#1C1917] font-semibold py-2 px-2.5 bg-white border border-[#DFD3C3]/70 truncate text-center"
               >
-                Pequenos Móveis
+                Móveis
               </a>
               <a
                 href="#anatomia"
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-xs uppercase tracking-widest text-[#1C1917] font-semibold py-1.5"
+                className="text-[11px] uppercase tracking-wider text-[#1C1917] font-semibold py-2 px-2.5 bg-white border border-[#DFD3C3]/70 truncate text-center"
               >
-                Processo &amp; Madeiras
+                Processo
               </a>
               <a
                 href="#encomenda"
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-xs uppercase tracking-widest text-[#1C1917] font-semibold py-1.5"
+                className="text-[11px] uppercase tracking-wider text-[#1C1917] font-semibold py-2 px-2.5 bg-white border border-[#DFD3C3]/70 truncate text-center col-span-1"
               >
-                Encomendas Sob Medida
+                Sob Medida
               </a>
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
                   onOpenCareGuide();
                 }}
-                className="text-left text-xs uppercase tracking-widest text-[#5C4033] font-semibold py-1.5 flex items-center gap-1.5"
+                className="text-[11px] uppercase tracking-wider text-[#5C4033] font-semibold py-2 px-2.5 bg-white border border-[#DFD3C3]/70 flex items-center justify-center gap-1 cursor-pointer truncate"
               >
-                <ShieldCheck className="w-4 h-4 text-[#8A5835]" />
-                <span>Garantia Vitalícia &amp; Cuidados</span>
+                <ShieldCheck className="w-3.5 h-3.5 text-[#8A5835] shrink-0" />
+                <span>Cuidados</span>
               </button>
             </nav>
-            <div className="pt-3 border-t border-[#DFD3C3]/60 flex flex-col gap-2">
+            <div className="pt-2 border-t border-[#DFD3C3]/60">
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
                   onOpenCustomStudio();
                 }}
-                className="w-full text-center py-3 bg-[#2A1E17] hover:bg-[#8A5835] text-white text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2"
+                className="w-full text-center py-2.5 bg-[#2A1E17] hover:bg-[#8A5835] text-white text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2"
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkles className="w-3.5 h-3.5 text-[#C29B68]" />
                 <span>Personalizar Peça Exclusiva</span>
               </button>
             </div>

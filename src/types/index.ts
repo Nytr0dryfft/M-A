@@ -7,6 +7,9 @@ export interface Product {
   highlightTag?: string;
   woods: string;
   price: number;
+  priceRange?: string;
+  priceMin?: number;
+  priceMax?: number;
   weight?: string;
   dimensions: string;
   description: string;
@@ -45,11 +48,27 @@ export interface CartItem {
   unitPrice: number;
 }
 
+export interface TeamShield {
+  id: string;
+  name: string;
+  shortName: string;
+  category: 'brasileirao_a' | 'brasileirao_b' | 'internacional';
+  categoryLabel: string;
+  displayLogo: string; // Utilizada apenas no seletor de clubes
+  cncArtwork: string;  // SVG monocromático preparado especificamente para CNC
+  imageUrl?: string;   // Compatibilidade legada (espelho de displayLogo)
+  city?: string;
+  state?: string;
+  country?: string;
+  primaryColor?: string;
+}
+
 export interface CustomOrderState {
   pieceType: string;
   woodType: string;
   engravingType: string;
   engravingText: string;
+  selectedTeam?: TeamShield | null;
   dimensions: string;
   lengthCm: number;
   widthCm: number;

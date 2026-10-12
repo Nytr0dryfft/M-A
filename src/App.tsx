@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PRODUCTS as DEFAULT_PRODUCTS, WOOD_SPECIMENS } from './data/catalog';
+import { PRODUCTS as DEFAULT_PRODUCTS } from './data/catalog';
 import { Product, CartItem } from './types';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
@@ -23,7 +23,8 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isCareGuideOpen, setIsCareGuideOpen] = useState(false);
-  const [customWoodChoice, setCustomWoodChoice] = useState('Mix Teca & Nogueira Americana');
+  const [customWoodChoice, setCustomWoodChoice] = useState('Pinus');
+  const [customPieceType, setCustomPieceType] = useState<'tabua_carne' | 'porta_copos'>('tabua_carne');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const heroBgUrl = DEFAULT_HERO_BG;
@@ -95,7 +96,8 @@ export default function App() {
     showToast(`Madeira ${woodName} selecionada para o seu projeto sob medida.`);
   };
 
-  const handleOpenCustomStudio = () => {
+  const handleOpenCustomStudio = (pieceType: 'tabua_carne' | 'porta_copos' = 'tabua_carne') => {
+    setCustomPieceType(pieceType);
     const element = document.getElementById('encomenda');
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
@@ -112,7 +114,7 @@ export default function App() {
         logoUrl={logoUrl}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenCareGuide={() => setIsCareGuideOpen(true)}
-        onOpenCustomStudio={handleOpenCustomStudio}
+        onOpenCustomStudio={() => handleOpenCustomStudio('tabua_carne')}
       />
 
       {/* 2. Main Content Flow */}
@@ -120,7 +122,7 @@ export default function App() {
         {/* 2.1 Hero with Deep Parallax Background & Drift */}
         <Hero
           heroBgUrl={heroBgUrl}
-          onOpenCustomStudio={handleOpenCustomStudio}
+          onOpenCustomStudio={() => handleOpenCustomStudio('tabua_carne')}
         />
 
         {/* 2.2 Featured Catalog with Parallax Card Depth */}
@@ -129,20 +131,21 @@ export default function App() {
           onSelectProduct={(p) => setSelectedProduct(p)}
           onAddToCart={(p) => handleAddToCart(p)}
           onCustomizeLaser={(p) => setSelectedProduct(p)}
+          onOpenCustomStudio={handleOpenCustomStudio}
         />
 
         {/* 2.3 Anatomy of M&A Craftsmanship (4 Pilares) */}
         <AnatomySection />
 
-        {/* 2.4 Wood Species Curator (Origem & Dureza Janka) */}
+        {/* 2.4 Madeiras do Atelier */}
         <WoodCurator
-          woodSpecimens={WOOD_SPECIMENS}
           onSelectWoodForCustom={handleSelectWoodForCustom}
         />
 
         {/* 2.5 Custom Order Studio & 3D/Isometric Sketch Generator */}
         <CustomOrderStudio
           initialWood={customWoodChoice}
+          initialPieceType={customPieceType}
           onSuccessOrder={(summary) => showToast('Orçamento registrado com sucesso!')}
         />
 

@@ -46,25 +46,25 @@ export const AnatomySection: React.FC = () => {
       num: '04',
       title: 'Personalização Autoral',
       description:
-        'Gravação de precisão milimétrica a laser com brasão de família, monogramas, assinatura de chef ou logotipo institucional para presentes corporativos gourmet de alto impacto.',
+        'Usinagem de precisão milimétrica em CNC com brasão de família, monogramas, assinatura de chef ou logotipo institucional para presentes de alto impacto.',
       badgeCategory: 'Exclusividade',
-      badgeValue: 'Gravação a Laser & Medidas',
+      badgeValue: 'Usinagem CNC & Medidas',
       deepDive:
-        'Seja para marcar a data de um casamento, o brasão da sua propriedade, assinatura de mestre-churrasqueiro ou lotes corporativos para diretorias e clientes VIP, executamos queima milimétrica a laser sem alterar as propriedades alimentícias da madeira, acompanhado de certificado de autenticidade numerado.',
-      stats: 'Gravação em alta definição óptica com profundidade calibrada a 0,8mm.',
+        'Seja para marcar a data de um casamento, o brasão da sua propriedade, assinatura de mestre-churrasqueiro ou lotes corporativos para diretorias e clientes VIP, executamos usinagem milimétrica computadorizada CNC na própria madeira maciça, acompanhado de certificado de autenticidade numerado.',
+      stats: 'Usinagem em fresa de precisão CNC com profundidade milimétrica calibrada.',
     },
   ];
 
   return (
-    <section className="py-20 lg:py-28 2xl:py-36 max-w-[1560px] mx-auto px-6 sm:px-8 lg:px-14 xl:px-16 2xl:px-20 bg-[#FCF9F3] border-t border-[#DFD3C3]/60" id="anatomia">
-      <div className="max-w-4xl 2xl:max-w-5xl mb-14 lg:mb-16">
-        <div className="flex items-center gap-2 mb-2">
+    <section className="py-10 sm:py-20 lg:py-28 2xl:py-36 max-w-[1560px] mx-auto px-4 sm:px-8 lg:px-14 xl:px-16 2xl:px-20 bg-[#FCF9F3] border-t border-[#DFD3C3]/60" id="anatomia">
+      <div className="max-w-4xl 2xl:max-w-5xl mb-8 sm:mb-14 lg:mb-16">
+        <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
           <span className="w-8 h-[2px] bg-[#8A5835]" />
-          <span className="text-xs uppercase tracking-[0.25em] text-[#8A5835] font-bold">
+          <span className="text-[11px] sm:text-xs uppercase tracking-[0.25em] text-[#8A5835] font-bold">
             Rigor Marceneiro
           </span>
         </div>
-        <h2 className="font-serif text-3xl sm:text-4xl 2xl:text-5xl text-[#111111] font-bold tracking-tight inline-flex items-baseline gap-1.5 flex-wrap">
+        <h2 className="font-serif text-2xl sm:text-4xl 2xl:text-5xl text-[#111111] font-bold tracking-tight inline-flex items-baseline gap-1.5 flex-wrap">
           <span>Anatomia de uma Obra</span>
           <span className="inline-flex items-baseline font-serif">
             <span>M</span>
@@ -73,49 +73,49 @@ export const AnatomySection: React.FC = () => {
           </span>
           <span>: 4 Pilares de Excelência</span>
         </h2>
-        <p className="text-sm sm:text-base 2xl:text-lg text-[#5C4033] mt-3 leading-relaxed">
+        <p className="text-xs sm:text-base 2xl:text-lg text-[#5C4033] mt-2 sm:mt-3 leading-relaxed">
           Por que uma peça esculpida em marcenaria autoral atravessa décadas intacta enquanto tábuas
           comuns empenam e perdem a vida.
         </p>
       </div>
 
-      {/* Grid of 4 Pillars */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 xl:gap-8">
+      {/* Grid of 4 Pillars: 2 columns on mobile, 4 on desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-6 xl:gap-8">
         {pillars.map((pillar) => (
           <div
             key={pillar.id}
             onClick={() => setActivePillar(pillar.id === activePillar ? null : pillar.id)}
-            className={`bg-[#FAF8F5] p-7 sm:p-8 border-t-4 border-[#8A5835] shadow-md flex flex-col justify-between group transition-all duration-300 cursor-pointer ${
+            className={`bg-[#FAF8F5] p-3.5 sm:p-7 xl:p-8 border-t-4 border-[#8A5835] shadow-md flex flex-col justify-between group transition-all duration-300 cursor-pointer ${
               activePillar === pillar.id
                 ? 'ring-2 ring-[#8A5835] -translate-y-1.5 shadow-xl bg-white'
                 : 'hover:-translate-y-1 hover:shadow-lg'
             }`}
           >
             <div>
-              <div className="flex justify-between items-center mb-6">
-                <span className="font-serif text-4xl font-bold text-[#DFD3C3] group-hover:text-[#8A5835] transition-colors">
+              <div className="flex justify-between items-center mb-3 sm:mb-6">
+                <span className="font-serif text-2xl sm:text-4xl font-bold text-[#DFD3C3] group-hover:text-[#8A5835] transition-colors">
                   {pillar.num}
                 </span>
-                <span className="text-xs text-[#8A5835] font-semibold flex items-center gap-1 group-hover:underline">
-                  <Info className="w-3.5 h-3.5" />
-                  <span>Saber mais</span>
+                <span className="text-[10px] sm:text-xs text-[#8A5835] font-semibold flex items-center gap-1 group-hover:underline">
+                  <Info className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span className="hidden xs:inline">Saber mais</span>
                 </span>
               </div>
 
-              <h4 className="font-serif text-xl font-bold text-[#111111] mb-2.5">
+              <h4 className="font-serif text-sm sm:text-xl font-bold text-[#111111] mb-1.5 sm:mb-2.5 leading-snug">
                 {pillar.title}
               </h4>
 
-              <p className="text-xs sm:text-sm text-[#5C4033] leading-relaxed">
+              <p className="text-[11px] sm:text-sm text-[#5C4033] leading-relaxed line-clamp-4 sm:line-clamp-none">
                 {pillar.description}
               </p>
             </div>
 
-            <div className="mt-8 pt-4 border-t border-[#DFD3C3]/60">
-              <span className="text-[10px] uppercase tracking-wider text-[#B88658] font-bold block mb-0.5">
+            <div className="mt-4 sm:mt-8 pt-2.5 sm:pt-4 border-t border-[#DFD3C3]/60">
+              <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-[#B88658] font-bold block mb-0.5 truncate">
                 {pillar.badgeCategory}
               </span>
-              <span className="text-xs font-semibold text-[#111111]">
+              <span className="text-[11px] sm:text-xs font-semibold text-[#111111] truncate block">
                 {pillar.badgeValue}
               </span>
             </div>
@@ -125,7 +125,7 @@ export const AnatomySection: React.FC = () => {
 
       {/* Deep Dive Panel if selected */}
       {activePillar !== null && (
-        <div className="mt-8 p-6 sm:p-8 bg-[#2A1E17] text-[#FAF8F5] shadow-xl relative animate-fadeIn border-l-4 border-[#C29B68]">
+        <div className="mt-4 sm:mt-8 p-4 sm:p-8 bg-[#2A1E17] text-[#FAF8F5] shadow-xl relative animate-fadeIn border-l-4 border-[#C29B68]">
           <button
             onClick={() => setActivePillar(null)}
             className="absolute top-4 right-4 text-[#DFD3C3] hover:text-white p-1"

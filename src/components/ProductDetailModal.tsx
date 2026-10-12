@@ -56,9 +56,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {/* Laser engraving overlay simulation */}
                 {enableLaser && engravingText && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4">
-                    <div className="px-4 py-2 bg-black/60 border border-[#C29B68]/70 text-[#C29B68] font-serif font-bold text-sm tracking-widest uppercase shadow-2xl backdrop-blur-[1px]">
+                    <span
+                      className="font-serif font-bold text-sm tracking-widest uppercase text-[#1B0F07]"
+                      style={{
+                        textShadow: '0 1px 1px rgba(255,255,255,0.35), 0 -1px 2px rgba(0,0,0,0.85)',
+                        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+                      }}
+                    >
                       {engravingText}
-                    </div>
+                    </span>
                   </div>
                 )}
 
@@ -79,7 +85,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       onChange={(e) => setEnableLaser(e.target.checked)}
                       className="accent-[#8A5835] w-4 h-4 cursor-pointer"
                     />
-                    <span>Personalizar Brasão ou Nome (CNC / Laser)</span>
+                    <span>Personalização feita por CNC (Brasão ou Nome)</span>
                   </label>
                   <span className="text-[10px] uppercase text-[#DFD3C3]/70 font-mono">
                     {enableLaser ? '+ R$ 50,00' : 'Opcional'}
@@ -97,7 +103,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       className="w-full p-2.5 bg-black/40 border border-[#DFD3C3]/30 text-xs text-white focus:outline-[#C29B68]"
                     />
                     <span className="text-[10px] text-[#DFD3C3]/60 block">
-                      Gravação milimétrica com queima limpa a laser óptico.
+                      Usinagem milimétrica com alta precisão CNC na madeira maciça.
                     </span>
                   </div>
                 )}
@@ -123,7 +129,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </h3>
                 <div className="flex items-baseline gap-3 mt-2">
                   <span className="text-2xl font-bold font-serif text-[#1C1917] tabular-nums">
-                    R$ {(product.price + (enableLaser ? 50 : 0)).toFixed(2).replace('.', ',')}
+                    {product.priceRange ? product.priceRange : `R$ ${(product.price + (enableLaser ? 50 : 0)).toFixed(2).replace('.', ',')}`}
                   </span>
                   <span className="text-xs text-[#5C4033] font-medium">
                     Madeiras: {product.woods}
@@ -173,7 +179,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 ) : (
                   <>
                     <ShoppingBag className="w-4 h-4" />
-                    <span>Adicionar ao Pedido (R$ {(product.price + (enableLaser ? 50 : 0)).toFixed(2).replace('.', ',')})</span>
+                    <span>
+                      Adicionar ao Pedido ({product.priceRange ? product.priceRange : `R$ ${(product.price + (enableLaser ? 50 : 0)).toFixed(2).replace('.', ',')}`})
+                    </span>
                   </>
                 )}
               </button>

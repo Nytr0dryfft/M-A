@@ -34,7 +34,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       msg += `${i + 1}. *${item.product.name}* (${item.quantity}x)\n`;
       msg += `   Valor: R$ ${(item.unitPrice * item.quantity).toFixed(2).replace('.', ',')}\n`;
       if (item.customEngraving) {
-        msg += `   Gravação a Laser: "${item.customEngraving}"\n`;
+        msg += `   Personalização por CNC: "${item.customEngraving}"\n`;
       }
       msg += `   Madeiras: ${item.product.woods}\n\n`;
     });
@@ -54,13 +54,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         onClick={onClose}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+      <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10">
         <div className="w-screen max-w-md bg-[#FAF8F5] shadow-2xl flex flex-col justify-between border-l border-[#DFD3C3]">
           {/* Header */}
-          <div className="p-6 border-b border-[#DFD3C3] flex items-center justify-between bg-white">
+          <div className="p-4 sm:p-6 border-b border-[#DFD3C3] flex items-center justify-between bg-white">
             <div className="flex items-center gap-2.5">
               <ShoppingBag className="w-5 h-5 text-[#8A5835]" />
-              <h2 className="font-serif text-xl font-bold text-[#111111] inline-flex items-baseline gap-1">
+              <h2 className="font-serif text-lg sm:text-xl font-bold text-[#111111] inline-flex items-baseline gap-1">
                 <span>Sacola de Peças do Atelier</span>
                 <span className="inline-flex items-baseline font-serif">
                   <span>M</span>
@@ -79,7 +79,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           </div>
 
           {/* Items Container */}
-          <div className="p-6 flex-1 overflow-y-auto space-y-4">
+          <div className="p-4 sm:p-6 flex-1 overflow-y-auto space-y-3 sm:space-y-4">
             {items.length === 0 ? (
               <div className="text-center py-16 space-y-4">
                 <ShoppingBag className="w-12 h-12 text-[#DFD3C3] mx-auto" />
@@ -190,7 +190,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
           {/* Footer & Actions */}
           {items.length > 0 && (
-            <div className="p-6 bg-white border-t border-[#DFD3C3] space-y-3">
+            <div className="p-4 sm:p-6 bg-white border-t border-[#DFD3C3] space-y-2.5 sm:space-y-3">
               <div className="flex justify-between items-baseline">
                 <span className="text-xs uppercase tracking-wider text-[#5C4033] font-semibold">
                   Subtotal Estimado:
