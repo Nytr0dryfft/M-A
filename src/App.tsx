@@ -143,11 +143,11 @@ export default function App() {
           onSelectWoodForCustom={handleSelectWoodForCustom}
         />
 
-        {/* 2.5 Custom Order Studio & 3D/Isometric Sketch Generator */}
+        {/* 2.5 Configurador Interativo Autoral & Estúdio Sob Medida */}
         <CustomOrderStudio
           initialWood={customWoodChoice}
           initialPieceType={customPieceType}
-          onSuccessOrder={(summary) => showToast('Orçamento registrado com sucesso!')}
+          onSuccessOrder={(summary) => showToast(summary || 'Orçamento registrado com sucesso!')}
         />
 
         {/* 2.6 Testimonials & Recognition */}
