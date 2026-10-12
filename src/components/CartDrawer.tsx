@@ -107,7 +107,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       <img
                         src={item.product.imageUrl}
                         alt={item.product.name}
-                        className="w-16 h-16 object-cover bg-[#2A1E17] border border-[#DFD3C3]/50 shrink-0"
+                        className={`w-16 h-16 ${item.product.imageFit === 'contain' ? 'object-contain p-1' : 'object-cover'} bg-[#2A1E17] border border-[#DFD3C3]/50 shrink-0`}
                         referrerPolicy="no-referrer"
                       />
                       <div className="flex-1 min-w-0">

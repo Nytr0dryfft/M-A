@@ -20,6 +20,8 @@ import {
   ShoppingBag,
   SlidersHorizontal,
   Camera,
+  ZoomIn,
+  X,
 } from 'lucide-react';
 import { CustomerPhotosModal } from './CustomerPhotosModal';
 
@@ -40,6 +42,7 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
 }) => {
   const [filter, setFilter] = useState<'all' | 'tabua' | 'movel'>('all');
   const [isCustomerPhotosOpen, setIsCustomerPhotosOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
 
   const handleGoToCustomizer = (pieceType: 'tabua_carne' | 'porta_copos' = 'tabua_carne') => {
     if (onOpenCustomStudio) {
@@ -306,11 +309,11 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
               <div className="flex items-center gap-2.5 sm:gap-3">
                 <Armchair className="w-5 h-5 sm:w-6 sm:h-6 text-[#8A5835]" />
                 <h3 className="font-serif text-xl sm:text-2xl 2xl:text-3xl font-bold text-[#111111]">
-                  Coleção Pequenos Móveis Esculturais
+                  Coleção Móveis em Madeira Maciça
                 </h3>
               </div>
               <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#B88658] hidden sm:inline">
-                Encaixes Japoneses &amp; Pranchas Vivas
+                Mesas &amp; Mobiliário em Madeira Maciça
               </span>
             </div>
 
@@ -321,22 +324,74 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
                   className="bg-[#FAF8F5] border border-[#DFD3C3]/80 shadow-lg group hover:shadow-2xl transition-all duration-300 flex flex-col justify-between overflow-hidden"
                 >
                   <div>
-                    {/* Image Box with Parallax Scale */}
-                    <div className="relative overflow-hidden aspect-[16/10] bg-[#2A1E17]">
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out will-change-transform"
-                        referrerPolicy="no-referrer"
-                      />
+                    {/* Image Box with Adaptive Framing (sem corte para banquetas) */}
+                    <div className="relative overflow-hidden aspect-[4/3] sm:aspect-[16/11] bg-[#1A1410]">
+                      {product.imageFit === 'contain' ? (
+                        <div
+                          className="relative w-full h-full flex items-center justify-center overflow-hidden cursor-pointer bg-[#18110D]"
+                          onClick={() => setPreviewImage({ url: product.imageUrl, title: product.name })}
+                          title="Clique para ver a foto completa por inteiro"
+                        >
+                          {/* Fundo suave desfocado para compor o enquadramento sem cortes e sem barras pretas secas */}
+                          <img
+                            src={product.imageUrl}
+                            alt=""
+                            aria-hidden="true"
+                            className="absolute inset-0 w-full h-full object-cover blur-xl scale-125 opacity-35 brightness-75 pointer-events-none select-none"
+                          />
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            className="relative z-10 max-h-full max-w-full object-contain p-2 sm:p-3.5 group-hover:scale-102 transition-transform duration-500 ease-out will-change-transform drop-shadow-md"
+                            referrerPolicy="no-referrer"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewImage({ url: product.imageUrl, title: product.name });
+                            }}
+                            className="absolute bottom-3 right-3 z-20 bg-black/75 hover:bg-black text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 flex items-center gap-1.5 backdrop-blur-xs transition-colors border border-white/10"
+                            title="Ver foto inteira sem cortes"
+                          >
+                            <ZoomIn className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#C29B68]" />
+                            <span>Ver foto inteira</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          className="relative w-full h-full cursor-pointer"
+                          onClick={() => setPreviewImage({ url: product.imageUrl, title: product.name })}
+                          title="Clique para ampliar a foto"
+                        >
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out will-change-transform"
+                            referrerPolicy="no-referrer"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewImage({ url: product.imageUrl, title: product.name });
+                            }}
+                            className="absolute bottom-3 right-3 z-20 bg-black/75 hover:bg-black text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 flex items-center gap-1.5 backdrop-blur-xs transition-colors border border-white/10"
+                            title="Ampliar foto"
+                          >
+                            <ZoomIn className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#C29B68]" />
+                            <span>Ampliar</span>
+                          </button>
+                        </div>
+                      )}
 
                       {product.badge && (
-                        <span className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-[#111111]/90 backdrop-blur-md text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 sm:px-3 sm:py-1.5">
+                        <span className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20 bg-[#111111]/90 backdrop-blur-md text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 sm:px-3 sm:py-1.5">
                           {product.badge}
                         </span>
                       )}
                       {product.highlightTag && (
-                        <span className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-[#DFD3C3] text-[#111111] text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 sm:px-3 sm:py-1 shadow">
+                        <span className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 bg-[#DFD3C3] text-[#111111] text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 sm:px-3 sm:py-1 shadow">
                           {product.highlightTag}
                         </span>
                       )}
@@ -413,6 +468,42 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
         onClose={() => setIsCustomerPhotosOpen(false)}
         onGoToCustomizer={handleGoToCustomizer}
       />
+
+      {/* Lightbox para visualização de foto em alta definição e 100% inteira sem cortes */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-md animate-fadeIn"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="relative max-w-4xl max-h-[92vh] w-full flex flex-col items-center justify-center bg-[#18110D] border border-[#DFD3C3]/30 p-3 sm:p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full flex items-center justify-between pb-3 px-1 border-b border-white/10 text-white">
+              <span className="font-serif text-sm sm:text-base font-bold text-[#E6DAC8] truncate pr-4">
+                {previewImage.title} — Visualização Completa
+              </span>
+              <button
+                onClick={() => setPreviewImage(null)}
+                className="p-1.5 bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/20 cursor-pointer"
+                aria-label="Fechar foto"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="w-full flex-1 flex items-center justify-center overflow-hidden p-2 sm:p-4">
+              <img
+                src={previewImage.url}
+                alt={previewImage.title}
+                className="max-h-[76vh] max-w-full object-contain drop-shadow-2xl"
+              />
+            </div>
+            <div className="w-full text-center pt-2 text-[11px] text-[#C29B68] font-mono">
+              Foto 100% completa sem nenhum corte
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

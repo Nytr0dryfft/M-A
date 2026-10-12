@@ -13,10 +13,11 @@ import { CartDrawer } from './components/CartDrawer';
 import { CareGuideModal } from './components/CareGuideModal';
 import { Footer } from './components/Footer';
 import { CheckCircle2 } from 'lucide-react';
+import heroBgImg from './assets/images/hero-bg.jpg';
+import logoImg from './assets/images/logo.png';
 
-const DEFAULT_HERO_BG =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuAicI1LGddhH5Xv4o6T-GFiYMh_gZgvnkM7T_djJroxlG0Js626gPUQQZEaf1NZGhRtEnayzHqv872KMsEIE7MGj6-o_o1dLMIijOY-VnVwA5v2wNpBf_zFk2N68QTkgDp-pGjGPRbRYUlg_co93yuggdyrOUCiQT9QOp4Fet0zggGVGb8w6YNxvHxc1uQplYeWebs4-eIh0ZQnVQ96hth6xs6So7nfn-yKVklC8_vtoDHU--gSYOlwLg';
-const DEFAULT_LOGO = '/logo.png';
+const DEFAULT_HERO_BG = heroBgImg;
+const DEFAULT_LOGO = logoImg;
 
 export default function App() {
   const [cart, setCart] = useState<CartItem[]>([]);

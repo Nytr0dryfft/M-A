@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, ArrowRight, Menu, X, ShieldCheck, Sparkles } from 'lucide-react';
+import logoImg from '../assets/images/logo.png';
 
 interface HeaderProps {
   cartCount: number;
@@ -11,7 +12,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   cartCount,
-  logoUrl = '/logo.png',
+  logoUrl = logoImg,
   onOpenCart,
   onOpenCareGuide,
   onOpenCustomStudio,

@@ -3,6 +3,7 @@ import { Shield, Sparkles, SlidersHorizontal, Layers, Ruler } from 'lucide-react
 import { TeamShield } from '../types';
 import { CncShieldRenderer } from './CncShieldRenderer';
 import { getWoodById } from '../data/woods';
+import { getAssetUrl } from '../utils/assets';
 
 export type ShieldPosition = 'center' | 'top_right' | 'top_left' | 'bottom_right';
 
@@ -235,7 +236,7 @@ export const CuttingBoardPreview: React.FC<CuttingBoardPreviewProps> = ({
             height: `${boardPixelHeight}px`,
             borderRadius: `${outerCornerRadiusPx}px`,
             backgroundColor: woodTheme.baseColor,
-            backgroundImage: `url("${woodTheme.textureUrl || '/textures/teak_wood.jpg'}")`,
+            backgroundImage: `url("${woodTheme.textureUrl ? getAssetUrl(woodTheme.textureUrl) : getAssetUrl('/textures/teak_wood.jpg')}")`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             boxShadow: `

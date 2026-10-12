@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { TeamShield } from '../types';
+import { getAssetUrl } from '../utils/assets';
 
 export interface CncShieldRendererProps {
   team: TeamShield;
@@ -41,8 +42,8 @@ export const CncShieldRenderer: React.FC<CncShieldRendererProps> = ({
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<boolean>(false);
 
-  const cncArtworkUrl = team.cncArtwork || `/clubs/${team.id}/cnc.svg`;
-  const displayLogoUrl = team.displayLogo || team.imageUrl || `/clubs/${team.id}/logo.svg`;
+  const cncArtworkUrl = getAssetUrl(team.cncArtwork || `/clubs/${team.id}/cnc.svg`);
+  const displayLogoUrl = getAssetUrl(team.displayLogo || team.imageUrl || `/clubs/${team.id}/logo.svg`);
 
   // Carrega o SVG CNC bruto para renderização de máscara e depuração
   useEffect(() => {
@@ -63,7 +64,7 @@ export const CncShieldRenderer: React.FC<CncShieldRendererProps> = ({
       })
       .catch(() => {
         // Fallback para o placeholder padrão
-        fetch('/clubs/default-cnc.svg')
+        fetch(getAssetUrl('/clubs/default-cnc.svg'))
           .then((res) => res.text())
           .then((fallbackText) => {
             if (!isMounted) return;
@@ -231,7 +232,7 @@ export const CncShieldRenderer: React.FC<CncShieldRendererProps> = ({
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: `url("${woodTheme.textureUrl || '/textures/pinus_wood.jpg'}")`,
+            backgroundImage: `url("${woodTheme.textureUrl ? getAssetUrl(woodTheme.textureUrl) : getAssetUrl('/textures/pinus_wood.jpg')}")`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             filter: 'brightness(0.78) contrast(1.15)',

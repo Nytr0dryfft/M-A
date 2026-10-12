@@ -1,3 +1,8 @@
+import pinusTexture from '../assets/textures/pinus_wood.jpg';
+import angelimTexture from '../assets/textures/angelim_wood.jpg';
+import cedrinhoTexture from '../assets/textures/cedrinho_wood.jpg';
+import macarandubaTexture from '../assets/textures/macaranduba_wood.jpg';
+
 export type WoodId = 'pinus' | 'angelim' | 'cedrinho' | 'macaranduba';
 
 export interface AtelierWood {
@@ -22,7 +27,7 @@ export const ATELIER_WOODS: Record<WoodId, AtelierWood> = {
     id: 'pinus',
     name: 'Pinus',
     treatment: 'Tratamento em resina',
-    textureUrl: '/textures/pinus_wood.jpg',
+    textureUrl: pinusTexture,
     baseColor: '#E2CEAF',
     gradient: 'linear-gradient(135deg, #EAD7BA 0%, #DEC5A2 50%, #D4BA95 100%)',
     grooveBottom: '#8A7052',
@@ -35,7 +40,7 @@ export const ATELIER_WOODS: Record<WoodId, AtelierWood> = {
     id: 'angelim',
     name: 'Angelim',
     treatment: 'Tratamento em resina',
-    textureUrl: '/textures/angelim_wood.jpg',
+    textureUrl: angelimTexture,
     baseColor: '#B67E3E',
     gradient: 'linear-gradient(135deg, #C28B48 0%, #A97133 50%, #996227 100%)',
     grooveBottom: '#5C3814',
@@ -48,7 +53,7 @@ export const ATELIER_WOODS: Record<WoodId, AtelierWood> = {
     id: 'cedrinho',
     name: 'Cedrinho',
     treatment: 'Tratamento em resina',
-    textureUrl: '/textures/cedrinho_wood.jpg',
+    textureUrl: cedrinhoTexture,
     baseColor: '#B06856',
     gradient: 'linear-gradient(135deg, #BC7260 0%, #A25C4B 50%, #934E3F 100%)',
     grooveBottom: '#5A2A20',
@@ -61,7 +66,7 @@ export const ATELIER_WOODS: Record<WoodId, AtelierWood> = {
     id: 'macaranduba',
     name: 'Maçaranduba',
     treatment: 'Tratamento em resina',
-    textureUrl: '/textures/macaranduba_wood.jpg',
+    textureUrl: macarandubaTexture,
     baseColor: '#4A1D1B',
     gradient: 'linear-gradient(135deg, #582422 0%, #421817 50%, #341211 100%)',
     grooveBottom: '#220A09',

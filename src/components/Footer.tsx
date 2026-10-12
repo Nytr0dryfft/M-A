@@ -1,5 +1,6 @@
 import React from 'react';
 import { Instagram, MessageSquare, Pin, Phone, Mail, MapPin } from 'lucide-react';
+import logoImg from '../assets/images/logo.png';
 
 interface FooterProps {
   onOpenCareGuide: () => void;
@@ -8,7 +9,7 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({
   onOpenCareGuide,
-  logoUrl = '/logo.png',
+  logoUrl = logoImg,
 }) => {
   return (
     <footer className="bg-[#111111] text-[#DFD3C3] border-t border-[#2A1E17]">

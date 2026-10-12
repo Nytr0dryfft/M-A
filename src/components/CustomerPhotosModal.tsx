@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import { X, Star, Sparkles, ChevronRight, CheckCircle2, ShieldCheck, Heart } from 'lucide-react';
+import tabuaPersonalizadaImg from '../assets/images/tabua-personalizada.png';
+import clienteChurrascoImg from '../assets/images/cliente-churrasco-1.jpg';
+import clienteEntregaImg from '../assets/images/cliente-entrega-2.jpg';
+import tabuaTimeImg from '../assets/images/tabua-de-time.jpg';
+import portaCoposImg from '../assets/images/porta-copos-personalizados.jpg';
 
 export interface CustomerPhoto {
   id: string;
@@ -16,7 +21,7 @@ export interface CustomerPhoto {
 export const CUSTOMER_PHOTOS: CustomerPhoto[] = [
   {
     id: 'foto-1',
-    imageUrl: '/tabua-personalizada.png',
+    imageUrl: tabuaPersonalizadaImg,
     title: 'Tábua Personalizada Usinada em CNC com Brasão Resinado',
     clientName: 'Marcelo Ribeiro',
     city: 'São Paulo - SP',
@@ -28,7 +33,7 @@ export const CUSTOMER_PHOTOS: CustomerPhoto[] = [
   },
   {
     id: 'foto-2',
-    imageUrl: '/cliente-churrasco-1.jpg',
+    imageUrl: clienteChurrascoImg,
     title: 'Tábua Maciça em Ação no Churrasco Gourmet',
     clientName: 'Eduardo Silveira',
     city: 'Curitiba - PR',
@@ -40,7 +45,7 @@ export const CUSTOMER_PHOTOS: CustomerPhoto[] = [
   },
   {
     id: 'foto-3',
-    imageUrl: '/cliente-entrega-2.jpg',
+    imageUrl: clienteEntregaImg,
     title: 'Unboxing de Luxo com Brasão de Família e Certificado',
     clientName: 'Dra. Patrícia M.',
     city: 'Belo Horizonte - MG',
@@ -52,7 +57,7 @@ export const CUSTOMER_PHOTOS: CustomerPhoto[] = [
   },
   {
     id: 'foto-4',
-    imageUrl: '/tabua-de-time.jpg',
+    imageUrl: tabuaTimeImg,
     title: 'Tábua Artesanal Maciça Usinada com Brasão Oficial',
     clientName: 'Thiago Valente',
     city: 'Porto Alegre - RS',
@@ -64,7 +69,7 @@ export const CUSTOMER_PHOTOS: CustomerPhoto[] = [
   },
   {
     id: 'foto-5',
-    imageUrl: '/porta-copos-personalizados.jpg',
+    imageUrl: portaCoposImg,
     title: 'Porta-Copos Maciços Usinados em CNC para Área Gourmet',
     clientName: 'Rodrigo Alcantara',
     city: 'Campinas - SP',

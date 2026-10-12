@@ -23,6 +23,8 @@ export interface Product {
   inStock: boolean;
   joineryType: string;
   finishType: string;
+  imageFit?: 'cover' | 'contain';
+  imagePosition?: string;
 }
 
 export interface WoodSpecimen {

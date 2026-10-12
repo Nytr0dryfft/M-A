@@ -1,4 +1,5 @@
 import { TeamShield } from '../types';
+import { getAssetUrl } from '../utils/assets';
 
 export interface ShieldCategory {
   id: 'all' | 'brasileirao_a' | 'brasileirao_b' | 'internacional';
@@ -407,8 +408,8 @@ const RAW_SHIELDS = [
 export const TEAM_SHIELDS: TeamShield[] = RAW_SHIELDS.map((t) => ({
   ...t,
   category: t.category as TeamShield['category'],
-  displayLogo: t.displayLogo,
-  cncArtwork: t.cncArtwork,
-  imageUrl: t.displayLogo,
+  displayLogo: getAssetUrl(t.displayLogo),
+  cncArtwork: getAssetUrl(t.cncArtwork),
+  imageUrl: getAssetUrl(t.displayLogo),
 }));
 

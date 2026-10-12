@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Product } from '../types';
-import { X, ShoppingBag, PenTool, Check, Sparkles, Shield, Heart } from 'lucide-react';
+import { X, ShoppingBag, PenTool, Check, Sparkles, Shield, Heart, ZoomIn } from 'lucide-react';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -19,6 +19,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [engravingText, setEngravingText] = useState('M&A · MASTER CHEF');
   const [selectedAddon, setSelectedAddon] = useState<string>('cera_extra');
   const [added, setAdded] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
 
   const handleAdd = () => {
     onAddToCart(product, enableLaser ? engravingText : undefined);
@@ -30,50 +31,86 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-[#FAF8F5] max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-[#DFD3C3] shadow-2xl relative">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-20 p-2 bg-[#FAF8F5]/80 hover:bg-[#2A1E17] hover:text-white text-[#111111] transition-colors border border-[#DFD3C3]"
-          aria-label="Fechar janela"
-        >
-          <X className="w-5 h-5" />
-        </button>
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-sm animate-fadeIn">
+        <div className="bg-[#FAF8F5] max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-[#DFD3C3] shadow-2xl relative">
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 z-20 p-2 bg-[#FAF8F5]/80 hover:bg-[#2A1E17] hover:text-white text-[#111111] transition-colors border border-[#DFD3C3]"
+            aria-label="Fechar janela"
+          >
+            <X className="w-5 h-5" />
+          </button>
 
-        <div className="grid grid-cols-1 md:grid-cols-2">
-          {/* Left Column: Visual & Laser Simulator */}
-          <div className="p-6 sm:p-8 bg-[#2A1E17] text-[#FAF8F5] flex flex-col justify-between">
-            <div>
-              <div className="relative overflow-hidden aspect-[4/3] bg-black/40 border border-[#DFD3C3]/20 mb-4 group">
-                <img
-                  src={product.imageUrl}
-                  alt={product.name}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  referrerPolicy="no-referrer"
-                />
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            {/* Left Column: Visual & Laser Simulator */}
+            <div className="p-6 sm:p-8 bg-[#2A1E17] text-[#FAF8F5] flex flex-col justify-between">
+              <div>
+                <div 
+                  className={`relative overflow-hidden aspect-[4/3] bg-black/50 border border-[#DFD3C3]/20 mb-4 group ${
+                    product.imageFit === 'contain' ? 'flex items-center justify-center cursor-pointer' : ''
+                  }`}
+                  onClick={() => product.imageFit === 'contain' && setShowImagePreview(true)}
+                  title={product.imageFit === 'contain' ? 'Clique para ver foto em tamanho real' : undefined}
+                >
+                  {product.imageFit === 'contain' ? (
+                    <>
+                      {/* Fundo suave desfocado para evitar cortes e preencher barras */}
+                      <img
+                        src={product.imageUrl}
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute inset-0 w-full h-full object-cover blur-xl scale-125 opacity-35 brightness-75 pointer-events-none select-none"
+                      />
+                      <img
+                        src={product.imageUrl}
+                        alt={product.name}
+                        className="relative z-10 max-h-full max-w-full object-contain p-2 sm:p-3 transition-transform duration-500 group-hover:scale-103 drop-shadow-md"
+                        referrerPolicy="no-referrer"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowImagePreview(true);
+                        }}
+                        className="absolute bottom-2.5 right-2.5 z-20 bg-black/75 hover:bg-black text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 flex items-center gap-1 backdrop-blur-xs border border-white/10"
+                      >
+                        <ZoomIn className="w-3 h-3 text-[#C29B68]" />
+                        <span>Foto completa</span>
+                      </button>
+                    </>
+                  ) : (
+                    <img
+                      src={product.imageUrl}
+                      alt={product.name}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
 
-                {/* Laser engraving overlay simulation */}
-                {enableLaser && engravingText && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4">
-                    <span
-                      className="font-serif font-bold text-sm tracking-widest uppercase text-[#1B0F07]"
-                      style={{
-                        textShadow: '0 1px 1px rgba(255,255,255,0.35), 0 -1px 2px rgba(0,0,0,0.85)',
-                        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
-                      }}
-                    >
-                      {engravingText}
+                  {/* Laser engraving overlay simulation */}
+                  {enableLaser && engravingText && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none p-4">
+                      <span
+                        className="font-serif font-bold text-sm tracking-widest uppercase text-[#1B0F07]"
+                        style={{
+                          textShadow: '0 1px 1px rgba(255,255,255,0.35), 0 -1px 2px rgba(0,0,0,0.85)',
+                          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+                        }}
+                      >
+                        {engravingText}
+                      </span>
+                    </div>
+                  )}
+
+                  {product.badge && (
+                    <span className="absolute top-3 left-3 z-20 bg-[#111111]/90 text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-1">
+                      {product.badge}
                     </span>
-                  </div>
-                )}
-
-                {product.badge && (
-                  <span className="absolute top-3 left-3 bg-[#111111]/90 text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-1">
-                    {product.badge}
-                  </span>
-                )}
-              </div>
+                  )}
+                </div>
 
               {/* Laser Simulation Control Box */}
               <div className="p-4 bg-[#1C1917] border border-[#DFD3C3]/20 space-y-3">
@@ -197,5 +234,42 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         </div>
       </div>
     </div>
+
+      {/* Lightbox para visualização da foto 100% inteira sem cortes */}
+      {showImagePreview && (
+        <div
+          className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-md animate-fadeIn"
+          onClick={() => setShowImagePreview(false)}
+        >
+          <div
+            className="relative max-w-4xl max-h-[92vh] w-full flex flex-col items-center justify-center bg-[#18110D] border border-[#DFD3C3]/30 p-3 sm:p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full flex items-center justify-between pb-3 px-1 border-b border-white/10 text-white">
+              <span className="font-serif text-sm sm:text-base font-bold text-[#E6DAC8] truncate pr-4">
+                {product.name} — Fotografia Completa
+              </span>
+              <button
+                onClick={() => setShowImagePreview(false)}
+                className="p-1.5 bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/20 cursor-pointer"
+                aria-label="Fechar foto"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="w-full flex-1 flex items-center justify-center overflow-hidden p-2 sm:p-4">
+              <img
+                src={product.imageUrl}
+                alt={product.name}
+                className="max-h-[76vh] max-w-full object-contain drop-shadow-2xl"
+              />
+            </div>
+            <div className="w-full text-center pt-2 text-[11px] text-[#C29B68] font-mono">
+              Foto 100% completa sem nenhum corte vertical ou lateral
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
