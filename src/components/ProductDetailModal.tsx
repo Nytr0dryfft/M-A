@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Product } from '../types';
-import { X, ShoppingBag, PenTool, Check, Sparkles, Shield, Heart, ZoomIn } from 'lucide-react';
+import { X, ShoppingBag, PenTool, Check, Sparkles, Shield, Heart } from 'lucide-react';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -69,17 +69,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         className="relative z-10 max-h-full max-w-full object-contain p-2 sm:p-3 transition-transform duration-500 group-hover:scale-103 drop-shadow-md"
                         referrerPolicy="no-referrer"
                       />
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowImagePreview(true);
-                        }}
-                        className="absolute bottom-2.5 right-2.5 z-20 bg-black/75 hover:bg-black text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 flex items-center gap-1 backdrop-blur-xs border border-white/10"
-                      >
-                        <ZoomIn className="w-3 h-3 text-[#C29B68]" />
-                        <span>Foto completa</span>
-                      </button>
                     </>
                   ) : (
                     <img
@@ -235,38 +224,23 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       </div>
     </div>
 
-      {/* Lightbox para visualização da foto 100% inteira sem cortes */}
       {showImagePreview && (
         <div
-          className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-md animate-fadeIn"
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fadeIn"
           onClick={() => setShowImagePreview(false)}
         >
-          <div
-            className="relative max-w-4xl max-h-[92vh] w-full flex flex-col items-center justify-center bg-[#18110D] border border-[#DFD3C3]/30 p-3 sm:p-5 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="w-full flex items-center justify-between pb-3 px-1 border-b border-white/10 text-white">
-              <span className="font-serif text-sm sm:text-base font-bold text-[#E6DAC8] truncate pr-4">
-                {product.name} — Fotografia Completa
-              </span>
-              <button
-                onClick={() => setShowImagePreview(false)}
-                className="p-1.5 bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/20 cursor-pointer"
-                aria-label="Fechar foto"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="w-full flex-1 flex items-center justify-center overflow-hidden p-2 sm:p-4">
-              <img
-                src={product.imageUrl}
-                alt={product.name}
-                className="max-h-[76vh] max-w-full object-contain drop-shadow-2xl"
-              />
-            </div>
-            <div className="w-full text-center pt-2 text-[11px] text-[#C29B68] font-mono">
-              Foto 100% completa sem nenhum corte vertical ou lateral
-            </div>
+          <div className="relative max-w-4xl max-h-[90vh]">
+            <img
+              src={product.imageUrl}
+              alt={product.name}
+              className="max-h-[85vh] max-w-full object-contain"
+            />
+            <button
+              onClick={() => setShowImagePreview(false)}
+              className="absolute top-2 right-2 p-2 bg-black/60 text-white hover:bg-black cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
       )}

@@ -8,6 +8,7 @@ export type WoodId = 'pinus' | 'angelim' | 'cedrinho' | 'macaranduba';
 export interface AtelierWood {
   id: WoodId;
   name: string;
+  description: string;
   treatment: string;
   textureUrl: string;
   baseColor: string;
@@ -26,6 +27,8 @@ export const ATELIER_WOODS: Record<WoodId, AtelierWood> = {
   pinus: {
     id: 'pinus',
     name: 'Pinus',
+    description:
+      'Tonalidade clara com veios suaves e naturais. Confere leveza estética e calor rústico, sendo excelente para tábuas decorativas e peças de apoio.',
     treatment: 'Tratamento em resina',
     textureUrl: pinusTexture,
     baseColor: '#E2CEAF',
@@ -39,6 +42,8 @@ export const ATELIER_WOODS: Record<WoodId, AtelierWood> = {
   angelim: {
     id: 'angelim',
     name: 'Angelim',
+    description:
+      'Tons dourados aconchegantes com desenho marcante de fibras. Proporciona presença visual imponente a tábuas de corte e pequenos móveis contemporâneos.',
     treatment: 'Tratamento em resina',
     textureUrl: angelimTexture,
     baseColor: '#B67E3E',
@@ -52,6 +57,8 @@ export const ATELIER_WOODS: Record<WoodId, AtelierWood> = {
   cedrinho: {
     id: 'cedrinho',
     name: 'Cedrinho',
+    description:
+      'Nuances avermelhadas elegantes e textura homogênea. Agrega sofisticação visual e acabamento refinado a peças gourmet e mobiliário autoral.',
     treatment: 'Tratamento em resina',
     textureUrl: cedrinhoTexture,
     baseColor: '#B06856',
@@ -65,6 +72,8 @@ export const ATELIER_WOODS: Record<WoodId, AtelierWood> = {
   macaranduba: {
     id: 'macaranduba',
     name: 'Maçaranduba',
+    description:
+      'Coloração escura nobre e aspecto robusto de alta densidade visual. Garante sobriedade e estética imponente a tábuas expressivas e esculturas utilitárias.',
     treatment: 'Tratamento em resina',
     textureUrl: macarandubaTexture,
     baseColor: '#4A1D1B',

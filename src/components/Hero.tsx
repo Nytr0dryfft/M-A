@@ -86,20 +86,21 @@ export const Hero: React.FC<HeroProps> = ({
               <Utensils className="w-4 h-4" />
             </a>
 
-            <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5 sm:gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-4">
               <a
                 href="#moveis"
-                className="px-3.5 sm:px-8 py-3 sm:py-4 bg-white/95 hover:bg-white text-[#111111] text-xs font-bold uppercase tracking-widest transition-all duration-300 backdrop-blur-sm shadow-md flex items-center justify-center gap-2 cursor-pointer text-center truncate"
+                className="w-full sm:w-auto px-5 sm:px-8 py-3.5 sm:py-4 bg-white/95 hover:bg-white text-[#111111] text-xs font-bold uppercase tracking-wider sm:tracking-widest transition-all duration-300 backdrop-blur-sm shadow-md flex items-center justify-center gap-2.5 cursor-pointer text-center whitespace-nowrap min-h-[46px]"
               >
                 <span>Pequenos Móveis</span>
-                <Armchair className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <Armchair className="w-4 h-4 shrink-0 text-[#8A5835]" />
               </a>
 
               <button
+                type="button"
                 onClick={onOpenCustomStudio}
-                className="px-3.5 sm:px-5 py-3 sm:py-4 border border-[#C29B68]/60 hover:border-[#C29B68] text-[#FAF8F5] hover:bg-white/10 text-xs font-bold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer text-center truncate"
+                className="w-full sm:w-auto px-5 sm:px-6 py-3.5 sm:py-4 border border-[#C29B68]/70 hover:border-[#C29B68] text-[#FAF8F5] hover:bg-white/10 text-xs font-bold uppercase tracking-wider sm:tracking-widest transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer text-center whitespace-nowrap min-h-[46px]"
               >
-                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#C29B68] shrink-0" />
+                <Sparkles className="w-4 h-4 text-[#C29B68] shrink-0" />
                 <span>Sob Medida</span>
               </button>
             </div>

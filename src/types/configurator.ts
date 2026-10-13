@@ -2,7 +2,7 @@ export type ProductPieceType = 'tabua_carne' | 'porta_copos';
 
 export type WoodId = 'pinus' | 'angelim' | 'cedrinho' | 'macaranduba';
 
-export type CncTechniqueId = 'baixo_relevo_resina' | 'baixo_relevo_puro' | 'gravacao_rasa';
+export type CncTechniqueId = 'baixo_relevo_resina' | 'baixo_relevo_puro';
 
 export type FinishId = 'oleo_cera' | 'verniz_impermeavel';
 

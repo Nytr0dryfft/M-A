@@ -46,21 +46,22 @@ export const CuttingBoardPreview: React.FC<CuttingBoardPreviewProps> = ({
   // Fonte única de verdade das 4 madeiras oficiais do atelier
   const woodTheme = getWoodById(woodType);
 
-  // Aspect ratio calculation constrained within a fixed preview viewport
-  // Max container dimensions: 440px width, 280px height
-  const containerMaxWidth = 440;
-  const containerMaxHeight = 270;
+  // Aspect ratio calculation constrained within a responsive preview viewport
+  // Desktop: 440px width, 270px height. Mobile: adapts to available width without rotation.
+  const isClient = typeof window !== 'undefined';
+  const containerMaxWidth = isClient ? Math.min(440, Math.max(260, window.innerWidth - 32)) : 440;
+  const containerMaxHeight = Math.min(270, Math.round(containerMaxWidth * 0.72));
   const boardRatio = lengthCm / widthCm;
 
   let boardPixelWidth: number;
   let boardPixelHeight: number;
 
   if (boardRatio >= containerMaxWidth / containerMaxHeight) {
-    boardPixelWidth = containerMaxWidth;
-    boardPixelHeight = containerMaxWidth / boardRatio;
+    boardPixelWidth = Math.round(containerMaxWidth);
+    boardPixelHeight = Math.round(containerMaxWidth / boardRatio);
   } else {
-    boardPixelHeight = containerMaxHeight;
-    boardPixelWidth = containerMaxHeight * boardRatio;
+    boardPixelHeight = Math.round(containerMaxHeight);
+    boardPixelWidth = Math.round(containerMaxHeight * boardRatio);
   }
 
   // Pixel scale factor: how many pixels per centimeter of the physical cutting board

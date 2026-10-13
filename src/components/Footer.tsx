@@ -1,6 +1,7 @@
 import React from 'react';
 import { Instagram, MessageSquare, Pin, Phone, Mail, MapPin } from 'lucide-react';
 import logoImg from '../assets/images/logo.png';
+import { ATELIER_CONTACT } from '../config/contact';
 
 interface FooterProps {
   onOpenCareGuide: () => void;
@@ -47,7 +48,7 @@ export const Footer: React.FC<FooterProps> = ({
                 <Instagram className="w-4 h-4" />
               </a>
               <a
-                href="https://wa.me/5511994821200"
+                href={ATELIER_CONTACT.getWhatsAppUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="WhatsApp do Atelier"
@@ -95,18 +96,18 @@ export const Footer: React.FC<FooterProps> = ({
               Atendimento Direto
             </span>
             <a
-              href="tel:+5511994821200"
+              href={`tel:+${ATELIER_CONTACT.whatsappNumber}`}
               className="text-[11px] sm:text-xs text-[#DFD3C3] hover:text-white transition-colors flex items-center gap-1.5 truncate"
             >
               <Phone className="w-3.5 h-3.5 text-[#8A5835] shrink-0" />
-              <span className="truncate">+55 11 99482-1200</span>
+              <span className="truncate">{ATELIER_CONTACT.displayPhone}</span>
             </a>
             <a
-              href="mailto:atelier@cerne.design"
+              href={`mailto:${ATELIER_CONTACT.email}`}
               className="text-[11px] sm:text-xs text-[#DFD3C3] hover:text-white transition-colors flex items-center gap-1.5 truncate"
             >
               <Mail className="w-3.5 h-3.5 text-[#8A5835] shrink-0" />
-              <span className="truncate">atelier@cerne.design</span>
+              <span className="truncate">{ATELIER_CONTACT.email}</span>
             </a>
             <span className="text-[10px] sm:text-[11px] text-[#DFD3C3]/60 mt-1">
               Seg. a Sábado<br />
@@ -122,9 +123,9 @@ export const Footer: React.FC<FooterProps> = ({
             <p className="text-[11px] sm:text-xs text-[#DFD3C3] leading-relaxed flex items-start gap-2">
               <MapPin className="w-4 h-4 text-[#8A5835] shrink-0 mt-0.5" />
               <span>
-                Galpão dos Jacarandás, 140<br />
-                Vila Madalena — São Paulo, SP<br />
-                CEP 05435-000
+                {ATELIER_CONTACT.address.street}<br />
+                {ATELIER_CONTACT.address.neighborhood} — {ATELIER_CONTACT.address.city}, {ATELIER_CONTACT.address.state}<br />
+                CEP {ATELIER_CONTACT.address.cep}
               </span>
             </p>
             <span className="text-[10px] sm:text-[11px] text-[#DFD3C3]/70">

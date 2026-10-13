@@ -50,7 +50,7 @@ export const AnatomySection: React.FC = () => {
       badgeCategory: 'Exclusividade',
       badgeValue: 'Usinagem CNC & Medidas',
       deepDive:
-        'Seja para marcar a data de um casamento, o brasão da sua propriedade, assinatura de mestre-churrasqueiro ou lotes corporativos para diretorias e clientes VIP, executamos usinagem milimétrica computadorizada CNC na própria madeira maciça, acompanhado de certificado de autenticidade numerado.',
+        'Seja para marcar a data de um casamento, o brasão da sua propriedade, assinatura de mestre-churrasqueiro ou lotes corporativos para diretorias e clientes VIP, executamos usinagem milimétrica computadorizada CNC na própria madeira maciça, acompanhado de certificado de autenticidade e procedência.',
       stats: 'Usinagem em fresa de precisão CNC com profundidade milimétrica calibrada.',
     },
   ];

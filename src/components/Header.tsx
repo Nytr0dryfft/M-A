@@ -144,44 +144,45 @@ export const Header: React.FC<HeaderProps> = ({
               <a
                 href="#catalogo"
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-[11px] uppercase tracking-wider text-[#1C1917] font-semibold py-2 px-2.5 bg-white border border-[#DFD3C3]/70 truncate text-center"
+                className="text-[11px] uppercase tracking-wider text-[#1C1917] font-semibold py-2.5 px-2.5 bg-white border border-[#DFD3C3]/70 text-center flex items-center justify-center min-h-[42px]"
               >
                 Coleções
               </a>
               <a
                 href="#tabuas"
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-[11px] uppercase tracking-wider text-[#1C1917] font-semibold py-2 px-2.5 bg-white border border-[#DFD3C3]/70 truncate text-center"
+                className="text-[11px] uppercase tracking-wider text-[#1C1917] font-semibold py-2.5 px-2.5 bg-white border border-[#DFD3C3]/70 text-center flex items-center justify-center min-h-[42px]"
               >
                 Tábuas
               </a>
               <a
                 href="#moveis"
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-[11px] uppercase tracking-wider text-[#1C1917] font-semibold py-2 px-2.5 bg-white border border-[#DFD3C3]/70 truncate text-center"
+                className="text-[11px] uppercase tracking-wider text-[#1C1917] font-semibold py-2.5 px-2.5 bg-white border border-[#DFD3C3]/70 text-center flex items-center justify-center min-h-[42px] whitespace-nowrap"
               >
-                Móveis
+                Pequenos Móveis
               </a>
               <a
                 href="#anatomia"
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-[11px] uppercase tracking-wider text-[#1C1917] font-semibold py-2 px-2.5 bg-white border border-[#DFD3C3]/70 truncate text-center"
+                className="text-[11px] uppercase tracking-wider text-[#1C1917] font-semibold py-2.5 px-2.5 bg-white border border-[#DFD3C3]/70 text-center flex items-center justify-center min-h-[42px]"
               >
                 Processo
               </a>
               <a
                 href="#encomenda"
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-[11px] uppercase tracking-wider text-[#1C1917] font-semibold py-2 px-2.5 bg-white border border-[#DFD3C3]/70 truncate text-center col-span-1"
+                className="text-[11px] uppercase tracking-wider text-[#1C1917] font-semibold py-2.5 px-2.5 bg-white border border-[#DFD3C3]/70 text-center flex items-center justify-center min-h-[42px]"
               >
                 Sob Medida
               </a>
               <button
+                type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
                   onOpenCareGuide();
                 }}
-                className="text-[11px] uppercase tracking-wider text-[#5C4033] font-semibold py-2 px-2.5 bg-white border border-[#DFD3C3]/70 flex items-center justify-center gap-1 cursor-pointer truncate"
+                className="text-[11px] uppercase tracking-wider text-[#5C4033] font-semibold py-2.5 px-2.5 bg-white border border-[#DFD3C3]/70 flex items-center justify-center gap-1 cursor-pointer min-h-[42px]"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-[#8A5835] shrink-0" />
                 <span>Cuidados</span>

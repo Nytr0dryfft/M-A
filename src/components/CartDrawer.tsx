@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CartItem } from '../types';
 import { X, Plus, Minus, Trash2, ShoppingBag, MessageSquare, ArrowRight, Check } from 'lucide-react';
+import { ATELIER_CONTACT } from '../config/contact';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -43,7 +44,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     if (customerCity) msg += `Cidade/UF: ${customerCity}\n`;
     if (notes) msg += `Observações: ${notes}\n`;
 
-    return `https://wa.me/5511994821200?text=${encodeURIComponent(msg)}`;
+    return ATELIER_CONTACT.getWhatsAppUrl(msg);
   };
 
   return (

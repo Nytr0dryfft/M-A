@@ -12,6 +12,7 @@ import { ProductDetailModal } from './components/ProductDetailModal';
 import { CartDrawer } from './components/CartDrawer';
 import { CareGuideModal } from './components/CareGuideModal';
 import { Footer } from './components/Footer';
+import { WhatsAppButton } from './components/WhatsAppButton';
 import { CheckCircle2 } from 'lucide-react';
 import heroBgImg from './assets/images/hero-bg.jpg';
 import logoImg from './assets/images/logo.png';
@@ -183,9 +184,12 @@ export default function App() {
         onClose={() => setIsCareGuideOpen(false)}
       />
 
-      {/* 7. Toast Feedback Alert */}
+      {/* 7. Botão Flutuante Circular do WhatsApp */}
+      <WhatsAppButton />
+
+      {/* 8. Toast Feedback Alert */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#2A1E17] text-[#FAF8F5] border border-[#C29B68]/60 px-5 py-3.5 shadow-2xl flex items-center gap-3 animate-fadeIn max-w-md">
+        <div className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-50 bg-[#2A1E17] text-[#FAF8F5] border border-[#C29B68]/60 px-5 py-3.5 shadow-2xl flex items-center gap-3 animate-fadeIn max-w-md">
           <CheckCircle2 className="w-5 h-5 text-[#C29B68] shrink-0" />
           <span className="text-xs font-medium leading-relaxed">{toastMessage}</span>
         </div>

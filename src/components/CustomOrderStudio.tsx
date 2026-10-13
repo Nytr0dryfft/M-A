@@ -63,15 +63,6 @@ const CNC_TECHNIQUES: CncTechniqueOption[] = [
     applicableTo: ['tabua_carne', 'porta_copos'],
     isResin: false,
   },
-  {
-    id: 'gravacao_rasa',
-    name: 'Gravação Rasa de Alta Precisão',
-    shortDesc: 'Linhas finas usinadas com fresa em V para monogramas e assinaturas discretas',
-    badge: 'Sutil & Clássico',
-    priceModifier: 0.0,
-    applicableTo: ['tabua_carne', 'porta_copos'],
-    isResin: false,
-  },
 ];
 
 // Opções de Acabamento & Cura
@@ -777,7 +768,7 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
                   : 'text-[#DFD3C3] hover:text-white'
               }`}
             >
-              Tábua de Carne (3,5 cm)
+              Tábua de Carne
             </button>
             <button
               type="button"
@@ -788,7 +779,7 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
                   : 'text-[#DFD3C3] hover:text-white'
               }`}
             >
-              Porta-Copos (1,0 cm)
+              Porta-Copos
             </button>
           </div>
         </div>
@@ -1025,7 +1016,7 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
                 )}
 
                 {/* Adição de Textos Gravados */}
-                <div className="pt-2 border-t border-[#DFD3C3]/60 space-y-2.5">
+                <div className="pt-2 border-t border-[#DFD3C3]/60 space-y-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-[#8A5835] flex items-center gap-1.5">
                     <Type className="w-3.5 h-3.5" />
                     <span>Adicionar Texto Gravado</span>
@@ -1047,25 +1038,6 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
                     >
                       Inserir
                     </button>
-                  </div>
-
-                  {/* Seleção de Fontes */}
-                  <div className="grid grid-cols-2 gap-1.5 text-xs">
-                    {AVAILABLE_FONTS.slice(0, 4).map((f) => (
-                      <button
-                        key={f.id}
-                        type="button"
-                        onClick={() => setSelectedFont(f.fontFamily)}
-                        className={`p-1.5 text-left border text-[11px] truncate cursor-pointer ${
-                          selectedFont === f.fontFamily
-                            ? 'border-[#8A5835] bg-[#FAF3EA] font-bold'
-                            : 'border-[#DFD3C3] bg-white'
-                        }`}
-                        style={{ fontFamily: f.fontFamily }}
-                      >
-                        {f.name.split(' ')[0]}
-                      </button>
-                    ))}
                   </div>
                 </div>
               </div>
@@ -1109,39 +1081,9 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
                 </span>
               </div>
 
-              {/* Seletor de Modo de Visualização */}
-              <div className="flex items-center gap-1 bg-[#15100D] p-0.5 border border-white/10 text-[10px] font-bold uppercase tracking-wider">
-                <button
-                  type="button"
-                  onClick={() => setPreviewMode('realista')}
-                  className={`px-2 py-1 transition-colors cursor-pointer ${
-                    previewMode === 'realista' ? 'bg-[#C29B68] text-[#111]' : 'text-[#DFD3C3]'
-                  }`}
-                  title="Modo Realista com Veios da Madeira e Resina"
-                >
-                  Realista
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPreviewMode('monocromatico_cnc')}
-                  className={`px-2 py-1 transition-colors cursor-pointer ${
-                    previewMode === 'monocromatico_cnc' ? 'bg-[#C29B68] text-[#111]' : 'text-[#DFD3C3]'
-                  }`}
-                  title="Modo Monocromático para Simulação de Contraste CNC"
-                >
-                  CNC P&amp;B
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPreviewMode('tecnico_guias')}
-                  className={`px-2 py-1 transition-colors cursor-pointer ${
-                    previewMode === 'tecnico_guias' ? 'bg-[#C29B68] text-[#111]' : 'text-[#DFD3C3]'
-                  }`}
-                  title="Modo Técnico com Guias de Área Útil e Canaleta"
-                >
-                  Técnico
-                </button>
-              </div>
+              <span className="text-[11px] text-[#C29B68] font-mono">
+                {elements.length} {elements.length === 1 ? 'elemento posicionado' : 'elementos posicionados'}
+              </span>
             </div>
 
             {/* O CANVAS INTERATIVO COMPLETO */}

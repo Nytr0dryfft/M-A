@@ -41,3 +41,30 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: #B88658;
 }
+
+/* Letreiro Contínuo Infinito para Características das Peças */
+@keyframes marqueeContinuous {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee-infinite {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: marqueeContinuous 64s linear infinite;
+}
+
+.animate-marquee-infinite:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee-infinite {
+    animation: none !important;
+  }
+}

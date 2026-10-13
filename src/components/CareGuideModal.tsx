@@ -91,7 +91,7 @@ export const CareGuideModal: React.FC<CareGuideModalProps> = ({ isOpen, onClose 
               <p className="text-xs text-[#DFD3C3] leading-relaxed">
                 A M&amp;A garante que as peças em grão de topo e móveis esculturais não sofrerão
                 descolamento estrutural de blocos ou empenamento irreversível quando mantidas segundo este
-                protocolo. Cada peça acompanha número de série registrado no atelier.
+                protocolo.
               </p>
             </div>
           </div>
@@ -101,7 +101,7 @@ export const CareGuideModal: React.FC<CareGuideModalProps> = ({ isOpen, onClose 
               onClick={onClose}
               className="px-8 py-3 bg-[#2A1E17] hover:bg-[#8A5835] text-white text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer"
             >
-              Entendido e Salvo
+              Entendido
             </button>
           </div>
         </div>

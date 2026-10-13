@@ -7,9 +7,6 @@ import {
 import { getWoodById } from '../../data/woods';
 import { getAssetUrl } from '../../utils/assets';
 import {
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
   AlertTriangle,
   Copy,
   Trash2,
@@ -68,8 +65,43 @@ export const InteractiveBoardCanvas: React.FC<InteractiveBoardCanvasProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
 
-  // Nível de Zoom do viewport de edição (não altera medidas físicas em cm)
-  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  // Largura dinâmica do contêiner para adaptação responsiva no mobile (320px, 360px, 375px, 390px, 430px)
+  const [containerWidth, setContainerWidth] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      return Math.min(520, Math.max(280, window.innerWidth - 32));
+    }
+    return 520;
+  });
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const updateSize = () => {
+      if (containerRef.current) {
+        const w = containerRef.current.clientWidth;
+        if (w > 0) {
+          setContainerWidth(w);
+        }
+      }
+    };
+    updateSize();
+
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(() => {
+        updateSize();
+      });
+      ro.observe(containerRef.current);
+    }
+    window.addEventListener('resize', updateSize);
+
+    return () => {
+      if (ro) ro.disconnect();
+      window.removeEventListener('resize', updateSize);
+    };
+  }, []);
+
+  // Nível padrão fixo de proporção do viewport de edição (100%)
+  const zoomLevel = 1;
   const [activeHandle, setActiveHandle] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isRotating, setIsRotating] = useState<boolean>(false);
@@ -108,19 +140,29 @@ export const InteractiveBoardCanvas: React.FC<InteractiveBoardCanvasProps> = ({
   const isPortaCopos = pieceType === 'porta_copos';
   const woodTheme = getWoodById(woodType);
 
-  // Dimensões do container base (em pixels) para enquadrar a tábua responsivamente
-  const maxBaseWidth = 520;
-  const maxBaseHeight = 360;
+  // ENQUADRAMENTO RESPONSIVO E RIGOROSAMENTE HORIZONTAL DA TÁBUA NO MOBILE:
+  // - No desktop (>= 1024px): preserva o tamanho nominal (520px largura por 360px altura).
+  // - No mobile (320px a 430px): enquadra suavemente no espaço disponível com margens simétricas.
+  // - A tábua NUNCA é girada para vertical, esticada ou deformada.
+  // - A proporção física lengthCm / widthCm é estritamente mantida (comprimento > largura).
+  const isMobileViewport = containerWidth < 520;
+  const lateralPadding = isMobileViewport ? 20 : 0;
+  const availableWidth = Math.max(250, Math.min(520, containerWidth - lateralPadding));
+  const maxBaseWidth = availableWidth;
+  const maxBaseHeight = isMobileViewport
+    ? Math.min(360, Math.round(availableWidth * 0.72))
+    : 360;
+
   const boardRatio = lengthCm / widthCm;
 
   let basePixelWidth: number;
   let basePixelHeight: number;
 
   if (boardRatio >= maxBaseWidth / maxBaseHeight) {
-    basePixelWidth = maxBaseWidth;
+    basePixelWidth = Math.round(maxBaseWidth);
     basePixelHeight = Math.round(maxBaseWidth / boardRatio);
   } else {
-    basePixelHeight = maxBaseHeight;
+    basePixelHeight = Math.round(maxBaseHeight);
     basePixelWidth = Math.round(maxBaseHeight * boardRatio);
   }
 
@@ -145,11 +187,6 @@ export const InteractiveBoardCanvas: React.FC<InteractiveBoardCanvasProps> = ({
   const maxSafeHeightCm = widthCm - 2 * safeMarginCm;
 
   const selectedElement = elements.find((el) => el.id === selectedElementId) || null;
-
-  // Zoom handlers
-  const handleZoomIn = () => setZoomLevel((z) => Math.min(2.2, +(z + 0.15).toFixed(2)));
-  const handleZoomOut = () => setZoomLevel((z) => Math.max(0.6, +(z - 0.15).toFixed(2)));
-  const handleResetZoom = () => setZoomLevel(1);
 
   // -------------------------------------------------------------
   // TRATAMENTO PROFISSIONAL DE EVENTOS: SELEÇÃO POR CLIQUE VS ARRASTE
@@ -442,54 +479,9 @@ export const InteractiveBoardCanvas: React.FC<InteractiveBoardCanvasProps> = ({
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
     >
-      {/* 1. Barra Superior de Informações Técnicas e Zoom */}
-      <div className="w-full flex items-center justify-between pb-2 mb-2 border-b border-[#DFD3C3]/15 text-xs text-[#DFD3C3]">
-        {/* Dimensões Físicas em cm */}
-        <div className="flex items-center gap-2 font-mono text-[11px] text-[#C29B68]">
-          <span className="font-bold">
-            {lengthCm} × {widthCm} × {thicknessCm.toFixed(1).replace('.', ',')} cm
-          </span>
-          <span className="text-white/40">·</span>
-          <span className="text-[#DFD3C3] text-[10px]">
-            Área Útil: {maxSafeWidthCm.toFixed(1)} × {maxSafeHeightCm.toFixed(1)} cm
-          </span>
-        </div>
-
-        {/* Controles de Zoom do Viewport */}
-        <div className="flex items-center gap-1 bg-[#15100D] border border-white/10 px-1 py-0.5 shadow-sm">
-          <button
-            type="button"
-            onClick={handleZoomOut}
-            className="p-1 hover:text-white hover:bg-white/10 text-white/70 transition-colors cursor-pointer"
-            title="Reduzir visualização (-)"
-          >
-            <ZoomOut className="w-3.5 h-3.5" />
-          </button>
-          <span className="text-[10px] font-mono px-1.5 text-white/90">
-            {Math.round(zoomLevel * 100)}%
-          </span>
-          <button
-            type="button"
-            onClick={handleZoomIn}
-            className="p-1 hover:text-white hover:bg-white/10 text-white/70 transition-colors cursor-pointer"
-            title="Ampliar visualização (+)"
-          >
-            <ZoomIn className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={handleResetZoom}
-            className="p-1 hover:text-[#C29B68] text-white/50 border-l border-white/10 ml-0.5 cursor-pointer"
-            title="Ajustar ao tamanho padrão (100%)"
-          >
-            <Maximize2 className="w-3 h-3" />
-          </button>
-        </div>
-      </div>
-
-      {/* 2. Área Central de Visualização & Interação */}
+      {/* Área Central de Visualização & Interação */}
       <div
-        className="relative w-full min-h-[340px] sm:min-h-[410px] flex items-center justify-center p-3 sm:p-6 overflow-hidden bg-[#15100D] border border-[#DFD3C3]/20 shadow-inner"
+        className="relative w-full min-h-[250px] sm:min-h-[410px] flex items-center justify-center p-2.5 sm:p-6 overflow-hidden bg-[#15100D] border border-[#DFD3C3]/20 shadow-inner"
         onPointerDown={(e) => {
           // Clique no fundo vazio desseleciona elementos
           if (e.target === e.currentTarget) {

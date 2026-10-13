@@ -31,76 +31,104 @@ export const WoodCurator: React.FC<WoodCuratorProps> = ({
               Madeiras do Atelier
             </h2>
             <p className="text-xs sm:text-base 2xl:text-lg text-[#5C4033] mt-2 sm:mt-3 leading-relaxed">
-              Trabalhamos exclusivamente com 4 espécies selecionadas. Todas recebem tratamento em resina para máxima durabilidade e acabamento refinado.
+              Trabalhamos exclusivamente com 4 espécies selecionadas. Todas recebem tratamento em resina atóxica para máxima durabilidade e cuidado com sua saúde.
             </p>
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#B88658] bg-[#FCF9F3] px-4 py-2 border border-[#DFD3C3]">
-            <Droplets className="w-4 h-4 text-[#8A5835]" />
+          <div className="hidden sm:flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#8A5835] bg-[#FCF9F3] px-4 py-2 border border-[#DFD3C3]">
+            <Droplets className="w-4 h-4 text-[#8A5835] shrink-0" aria-hidden="true" />
             <span>Tratamento em Resina em Todas as Peças</span>
           </div>
         </div>
 
-        {/* 4 Cards: PINUS, ANGELIM, CEDRINHO, MAÇARANDUBA (2 cols on mobile, 4 cols on desktop) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-5 xl:gap-6 mb-6 sm:mb-8">
-          {ATELIER_WOODS_LIST.map((wood) => {
-            const isActive = wood.id === activeWoodId;
-            return (
-              <div
-                key={wood.id}
-                onClick={() => setActiveWoodId(wood.id)}
-                className={`p-2.5 sm:p-5 shadow-sm transition-all duration-300 flex flex-col justify-between cursor-pointer border-2 ${
-                  isActive
-                    ? 'bg-white border-[#8A5835] shadow-xl -translate-y-1'
-                    : 'bg-[#FCF9F3] border-transparent hover:border-[#DFD3C3] hover:shadow-md'
-                }`}
-              >
-                <div>
-                  {/* Swatch com Textura Real da Madeira */}
-                  <div className="w-full h-24 sm:h-40 bg-[#DFD3C3]/40 overflow-hidden relative mb-2 sm:mb-4 border border-black/10">
-                    <img
-                      src={wood.textureUrl}
-                      alt={`Madeira ${wood.name}`}
-                      className="w-full h-full object-cover"
-                    />
-                    <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 bg-[#111111] text-white text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 truncate max-w-[85%]">
-                      {wood.treatment}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between mb-1 sm:mb-2">
-                    <h3 className="font-serif text-sm sm:text-xl font-bold uppercase tracking-wider text-[#111111] truncate">
-                      {wood.name}
-                    </h3>
-                    {isActive && <Check className="w-4 h-4 sm:w-5 sm:h-5 text-[#8A5835] shrink-0" />}
-                  </div>
-
-                  <p className="text-[10px] sm:text-xs text-[#5C4033] font-medium leading-relaxed line-clamp-2 sm:line-clamp-none">
-                    {wood.treatment}
-                  </p>
-                </div>
-
-                <div className="mt-3 sm:mt-5 pt-2 sm:pt-3 border-t border-[#DFD3C3]/70">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
+        {/* Trilho de rolagem horizontal no mobile (com snap e inércia) & Grade no desktop */}
+        <div className="relative mb-6 sm:mb-8">
+          <div className="flex lg:grid lg:grid-cols-4 gap-3 sm:gap-5 xl:gap-6 overflow-x-auto lg:overflow-visible pb-3 pt-1 lg:py-0 snap-x snap-mandatory scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0 touch-pan-x">
+            {ATELIER_WOODS_LIST.map((wood) => {
+              const isActive = wood.id === activeWoodId;
+              return (
+                <div
+                  key={wood.id}
+                  onClick={() => setActiveWoodId(wood.id)}
+                  tabIndex={0}
+                  role="button"
+                  aria-pressed={isActive}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
                       setActiveWoodId(wood.id);
-                      onSelectWoodForCustom(wood.name);
-                    }}
-                    className={`w-full py-1.5 sm:py-2.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1 sm:gap-1.5 border truncate ${
-                      isActive
-                        ? 'bg-[#8A5835] text-white border-[#8A5835]'
-                        : 'bg-white text-[#2A1E17] border-[#DFD3C3] hover:border-[#8A5835]'
-                    }`}
-                  >
-                    <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
-                    <span className="truncate">Selecionar</span>
-                  </button>
+                    }
+                  }}
+                  className={`flex-none w-[76%] xs:w-[68%] sm:w-[46%] lg:w-auto snap-center sm:snap-start p-3.5 sm:p-5 shadow-sm transition-all duration-300 flex flex-col justify-between cursor-pointer border-2 focus:outline-none focus:ring-2 focus:ring-[#8A5835] ${
+                    isActive
+                      ? 'bg-white border-[#8A5835] shadow-xl -translate-y-1'
+                      : 'bg-[#FCF9F3] border-[#DFD3C3]/40 hover:border-[#DFD3C3] hover:shadow-md'
+                  }`}
+                >
+                  <div>
+                    {/* Swatch com Textura Real da Madeira */}
+                    <div className="w-full h-28 sm:h-40 bg-[#DFD3C3]/40 overflow-hidden relative mb-2.5 sm:mb-4 border border-black/10">
+                      <img
+                        src={wood.textureUrl}
+                        alt={`Madeira ${wood.name}`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 bg-[#111111]/90 backdrop-blur-xs text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 max-w-[90%] truncate flex items-center gap-1">
+                        <Droplets className="w-2.5 h-2.5 text-white shrink-0" aria-hidden="true" />
+                        <span className="truncate">{wood.treatment}</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+                      <h3 className="font-serif text-base sm:text-xl font-bold uppercase tracking-wider text-[#111111]">
+                        {wood.name}
+                      </h3>
+                      {isActive && <Check className="w-4 h-4 sm:w-5 sm:h-5 text-[#8A5835] shrink-0" />}
+                    </div>
+
+                    {/* Descrição Curta da Madeira */}
+                    <p className="text-[11px] sm:text-xs text-[#5C4033] leading-relaxed mb-2.5">
+                      {wood.description}
+                    </p>
+
+                    {/* Indicação de Tratamento em Resina com Símbolo de Gotinha no Mesmo Tom */}
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#8A5835]">
+                      <Droplets className="w-3.5 h-3.5 text-[#8A5835] shrink-0" aria-hidden="true" />
+                      <span>{wood.treatment}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 sm:mt-5 pt-2.5 sm:pt-3 border-t border-[#DFD3C3]/70">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveWoodId(wood.id);
+                        onSelectWoodForCustom(wood.name);
+                      }}
+                      className={`w-full py-2 sm:py-2.5 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5 border min-h-[38px] ${
+                        isActive
+                          ? 'bg-[#8A5835] text-white border-[#8A5835]'
+                          : 'bg-white text-[#2A1E17] border-[#DFD3C3] hover:border-[#8A5835]'
+                      }`}
+                    >
+                      <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                      <span>Selecionar</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+
+          {/* Indicador sutil de deslizamento lateral no mobile */}
+          <div className="flex lg:hidden items-center justify-between pt-1 px-1 text-[11px] text-[#8A5835] font-medium select-none">
+            <span>← Deslize para explorar as 4 madeiras →</span>
+            <span className="text-[10px] text-[#5C4033]">
+              {ATELIER_WOODS_LIST.findIndex((w) => w.id === activeWoodId) + 1} de {ATELIER_WOODS_LIST.length}
+            </span>
+          </div>
         </div>
 
         {/* Selected Wood Callout */}
@@ -113,8 +141,9 @@ export const WoodCurator: React.FC<WoodCuratorProps> = ({
               <h4 className="font-serif text-xl sm:text-2xl font-bold text-[#111111]">
                 {selectedWood.name}
               </h4>
-              <p className="text-[11px] sm:text-xs text-[#5C4033]">
-                {selectedWood.treatment} — Peça produzida em madeira maciça com acabamento artesanal do atelier.
+              <p className="text-[11px] sm:text-xs text-[#5C4033] flex items-center gap-1.5">
+                <Droplets className="w-3.5 h-3.5 text-[#8A5835] shrink-0" aria-hidden="true" />
+                <span>{selectedWood.treatment} — Peça produzida em madeira maciça com acabamento artesanal do atelier.</span>
               </p>
             </div>
 

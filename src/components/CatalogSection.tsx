@@ -23,7 +23,8 @@ import {
   ZoomIn,
   X,
 } from 'lucide-react';
-import { CustomerPhotosModal } from './CustomerPhotosModal';
+import { CustomerPhotosModal, PhotoCategory } from './CustomerPhotosModal';
+import { InfiniteSpecsMarquee } from './InfiniteSpecsMarquee';
 
 interface CatalogSectionProps {
   products: Product[];
@@ -42,11 +43,24 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
 }) => {
   const [filter, setFilter] = useState<'all' | 'tabua' | 'movel'>('all');
   const [isCustomerPhotosOpen, setIsCustomerPhotosOpen] = useState(false);
+  const [customerPhotosCategory, setCustomerPhotosCategory] = useState<PhotoCategory | null>(null);
   const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
 
-  const handleGoToCustomizer = (pieceType: 'tabua_carne' | 'porta_copos' = 'tabua_carne') => {
+  const handleOpenCustomerPhotos = (category: PhotoCategory) => {
+    setCustomerPhotosCategory(category);
+    setIsCustomerPhotosOpen(true);
+  };
+
+  const handleGoToCustomizer = (pieceType: 'tabua_carne' | 'porta_copos' | 'movel' = 'tabua_carne') => {
+    if (pieceType === 'movel') {
+      const element = document.getElementById('moveis');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+    }
     if (onOpenCustomStudio) {
-      onOpenCustomStudio(pieceType);
+      onOpenCustomStudio(pieceType === 'porta_copos' ? 'porta_copos' : 'tabua_carne');
     } else {
       const element = document.getElementById('encomenda');
       if (element) {
@@ -107,20 +121,15 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
               A Arte do Grão &amp; Escultura Utilitária
             </h2>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <p className="text-xs sm:text-base text-[#5C4033] max-w-xl leading-relaxed">
-              Cada tábua de carne resinada e móvel escultural é numerado e finalizado à mão em nosso
-              atelier, valorizando nós naturais, entalhe de precisão e encaixes tradicionais.
-            </p>
-          </div>
         </div>
 
         {/* Interactive Segmented Filter Controls */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6 sm:mb-12">
-          <div className="w-full sm:w-auto grid grid-cols-3 sm:flex sm:items-center gap-1 sm:gap-1.5 p-1 bg-[#FAF8F5] border border-[#DFD3C3] shadow-sm">
+          <div className="w-full sm:w-auto flex items-center overflow-x-auto no-scrollbar gap-1 sm:gap-1.5 p-1 bg-[#FAF8F5] border border-[#DFD3C3] shadow-sm">
             <button
+              type="button"
               onClick={() => setFilter('all')}
-              className={`px-1.5 sm:px-4 py-2 text-[10px] sm:text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer text-center truncate ${
+              className={`px-3 sm:px-4 py-2 sm:py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer text-center whitespace-nowrap min-h-[38px] ${
                 filter === 'all'
                   ? 'bg-[#2A1E17] text-white shadow-sm'
                   : 'text-[#1C1917] hover:text-[#8A5835]'
@@ -129,26 +138,28 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
               Todas ({products.length})
             </button>
             <button
+              type="button"
               onClick={() => setFilter('tabua')}
-              className={`px-1.5 sm:px-4 py-2 text-[10px] sm:text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1 truncate ${
+              className={`px-3 sm:px-4 py-2 sm:py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap min-h-[38px] ${
                 filter === 'tabua'
                   ? 'bg-[#2A1E17] text-white shadow-sm'
                   : 'text-[#1C1917] hover:text-[#8A5835]'
               }`}
             >
-              <Utensils className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 hidden xs:inline" />
+              <Utensils className="w-3.5 h-3.5 shrink-0" />
               <span>Tábuas ({tabuas.length})</span>
             </button>
             <button
+              type="button"
               onClick={() => setFilter('movel')}
-              className={`px-1.5 sm:px-4 py-2 text-[10px] sm:text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1 truncate ${
+              className={`px-3 sm:px-4 py-2 sm:py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap min-h-[38px] ${
                 filter === 'movel'
                   ? 'bg-[#2A1E17] text-white shadow-sm'
                   : 'text-[#1C1917] hover:text-[#8A5835]'
               }`}
             >
-              <Armchair className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 hidden xs:inline" />
-              <span>Móveis ({moveis.length})</span>
+              <Armchair className="w-3.5 h-3.5 shrink-0" />
+              <span>Pequenos Móveis ({moveis.length})</span>
             </button>
           </div>
         </div>
@@ -215,7 +226,13 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
                         {product.description}
                       </p>
 
-                      <ul className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3 text-xs text-[#3E2D22] mb-4 sm:mb-6 py-2.5 sm:py-4 border-y border-[#DFD3C3]/60">
+                      {/* Letreiro contínuo infinito no mobile (sem corte de textos) */}
+                      <div className="block sm:hidden mb-4 -mx-4 w-[calc(100%+2rem)]">
+                        <InfiniteSpecsMarquee items={product.specs} />
+                      </div>
+
+                      {/* Grade tradicional e alinhada para desktop */}
+                      <ul className="hidden sm:grid sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3 text-xs text-[#3E2D22] mb-4 sm:mb-6 py-2.5 sm:py-4 border-y border-[#DFD3C3]/60">
                         {product.specs.map((spec, i) => (
                           <li key={i} className="flex items-center gap-1.5 sm:gap-2">
                             {renderSpecIcon(spec.icon)}
@@ -239,9 +256,9 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
                         </button>
 
                         <button
-                          onClick={() => setIsCustomerPhotosOpen(true)}
+                          onClick={() => handleOpenCustomerPhotos('tabua')}
                           className="py-2.5 sm:py-4 px-2 sm:px-6 sm:flex-1 border-2 border-[#2A1E17] hover:border-[#8A5835] hover:bg-[#FAF8F5] text-[#111111] hover:text-[#8A5835] text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer bg-white shadow-sm"
-                          title="Ver fotos de compras feitas por outros usuários"
+                          title="Ver fotos de tábuas de corte entregues aos clientes"
                         >
                           <Camera className="w-3.5 h-3.5 text-[#8A5835] shrink-0" />
                           <span className="truncate">Fotos de Clientes</span>
@@ -258,9 +275,9 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
                         </button>
 
                         <button
-                          onClick={() => setIsCustomerPhotosOpen(true)}
+                          onClick={() => handleOpenCustomerPhotos('porta-copos')}
                           className="py-2.5 sm:py-4 px-2 sm:px-6 sm:flex-1 border-2 border-[#2A1E17] hover:border-[#8A5835] hover:bg-[#FAF8F5] text-[#111111] hover:text-[#8A5835] text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer bg-white shadow-sm"
-                          title="Ver fotos de compras feitas por outros usuários"
+                          title="Ver fotos de porta-copos entregues aos clientes"
                         >
                           <Camera className="w-3.5 h-3.5 text-[#8A5835] shrink-0" />
                           <span className="truncate">Fotos de Clientes</span>
@@ -416,7 +433,13 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
                         {product.description}
                       </p>
 
-                      <ul className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3 text-xs text-[#3E2D22] mb-4 sm:mb-6 py-2.5 sm:py-4 border-y border-[#DFD3C3]/60">
+                      {/* Letreiro contínuo infinito no mobile (sem corte de textos) */}
+                      <div className="block sm:hidden mb-4 -mx-4 w-[calc(100%+2rem)]">
+                        <InfiniteSpecsMarquee items={product.specs} />
+                      </div>
+
+                      {/* Grade tradicional e alinhada para desktop */}
+                      <ul className="hidden sm:grid sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3 text-xs text-[#3E2D22] mb-4 sm:mb-6 py-2.5 sm:py-4 border-y border-[#DFD3C3]/60">
                         {product.specs.map((spec, i) => (
                           <li key={i} className="flex items-center gap-1.5 sm:gap-2">
                             {renderSpecIcon(spec.icon)}
@@ -439,20 +462,20 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
                       </button>
 
                       <button
-                        onClick={() => onSelectProduct(product)}
-                        className="col-span-1 py-2.5 sm:py-4 px-2 sm:px-5 border border-[#DFD3C3] hover:border-[#8A5835] text-[#111111] hover:text-[#8A5835] text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer bg-white"
+                        onClick={() => handleOpenCustomerPhotos('moveis')}
+                        className="col-span-1 py-2.5 sm:py-4 px-2 sm:px-4 border-2 border-[#2A1E17] hover:border-[#8A5835] hover:bg-[#FAF8F5] text-[#111111] hover:text-[#8A5835] text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer bg-white"
+                        title="Ver fotos reais de móveis entregues aos clientes"
                       >
-                        <SlidersHorizontal className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
-                        <span className="truncate">Ajustar Dimensões</span>
+                        <Camera className="w-3.5 h-3.5 text-[#8A5835] shrink-0" />
+                        <span className="truncate">Fotos Reais</span>
                       </button>
 
                       <button
                         onClick={() => onSelectProduct(product)}
-                        className="col-span-1 py-2.5 sm:p-4 border border-[#DFD3C3] hover:border-[#2A1E17] text-[#1C1917] transition-colors cursor-pointer bg-white flex items-center justify-center gap-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider"
-                        title="Ver galeria e especificações"
+                        className="col-span-1 py-2.5 sm:py-4 px-2 sm:px-4 border border-[#DFD3C3] hover:border-[#8A5835] text-[#111111] hover:text-[#8A5835] text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer bg-white"
                       >
-                        <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        <span className="sm:hidden">Detalhes</span>
+                        <SlidersHorizontal className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                        <span className="truncate">Dimensões</span>
                       </button>
                     </div>
                   </div>
@@ -467,6 +490,7 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
         isOpen={isCustomerPhotosOpen}
         onClose={() => setIsCustomerPhotosOpen(false)}
         onGoToCustomizer={handleGoToCustomizer}
+        categoryFilter={customerPhotosCategory}
       />
 
       {/* Lightbox para visualização de foto em alta definição e 100% inteira sem cortes */}

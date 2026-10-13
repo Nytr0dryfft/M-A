@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { OrderQuoteData } from '../../types/configurator';
+import { ATELIER_CONTACT } from '../../config/contact';
 
 interface QuoteReviewModalProps {
   isOpen: boolean;
@@ -152,7 +153,7 @@ Observações: ${notes || 'Nenhuma'}
         `Declaro ter autorização de uso das artes enviadas e aguardo a confirmação da viabilidade CNC.`
     );
 
-    return `https://wa.me/5511994821200?text=${text}`;
+    return ATELIER_CONTACT.getWhatsAppUrl(text);
   };
 
   return (
@@ -229,9 +230,9 @@ Observações: ${notes || 'Nenhuma'}
                   href={generateWhatsAppUrl()}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full py-4 bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-colors cursor-pointer"
+                  className="w-full py-4 bg-[#8A5835] hover:bg-[#6F4226] text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-colors cursor-pointer border border-[#C29B68]/60"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-4 h-4 text-[#FAF8F5]" />
                   <span>Enviar Especificação no WhatsApp Agora</span>
                 </a>
 
