@@ -13,6 +13,7 @@ export interface ImageUploadResult {
   isSvg: boolean;
   isRaster: boolean;
   hasAlpha: boolean;
+  rawSvgString?: string;
   sanitizedSvgString?: string;
   originalFile?: File;
 }
@@ -230,6 +231,7 @@ export async function processUploadedFile(file: File): Promise<ImageUploadResult
       isSvg: true,
       isRaster: false,
       hasAlpha: true,
+      rawSvgString: rawText,
       sanitizedSvgString: sanitized,
       originalFile: file,
     };

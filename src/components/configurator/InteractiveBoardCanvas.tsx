@@ -3,6 +3,7 @@ import {
   CanvasElement,
   ProductPieceType,
   PreviewMode,
+  CNC_LIMITS,
 } from '../../types/configurator';
 import { getWoodById } from '../../data/woods';
 import { getAssetUrl } from '../../utils/assets';
@@ -170,13 +171,14 @@ export const InteractiveBoardCanvas: React.FC<InteractiveBoardCanvasProps> = ({
   const pxPerCm = basePixelWidth / lengthCm;
 
   // Parâmetros físicos da madeira
-  // 1. Canaleta de gordura (Juice Groove)
+  // 1. Canaleta de gordura (Juice Groove) e Extremidades Quadradas
   const grooveMarginCm = 1.8;
   const grooveMarginPx = Math.round(grooveMarginCm * pxPerCm);
   const grooveWidthCm = 1.0;
   const grooveWidthPx = Math.max(5, Math.round(grooveWidthCm * pxPerCm));
-  const outerRadiusPx = Math.max(8, Math.round(1.5 * pxPerCm));
-  const grooveRadiusPx = Math.max(6, Math.round(outerRadiusPx * 0.75));
+  // Cantos retos de 90 graus (geometria quadrada pura sem arredondamentos)
+  const outerRadiusPx = 0;
+  const grooveRadiusPx = 0;
 
   // 2. Margem de segurança interna (Zona permitida para gravação sem tocar na canaleta)
   const safeMarginCm = isPortaCopos ? 1.0 : grooveMarginCm + grooveWidthCm + 0.8;
@@ -319,33 +321,49 @@ export const InteractiveBoardCanvas: React.FC<InteractiveBoardCanvasProps> = ({
       const startHeight = pointerIntentRef.current.elementStartHeightCm;
       const aspect = pointerIntentRef.current.aspectRatio;
 
-      let newWidthCm = startWidth;
-      let newHeightCm = startHeight;
+      // Limites dimensionais estritos para artes e imagens CNC:
+      // Tábua: Máximo Eixo X: 16 cm (nunca 17 cm) / Máximo Eixo Y: 25 cm / Mínimo 2.5 cm
+      // Porta-copos: Máximo 8.5 cm / Mínimo 2.0 cm
+      const limits = isPortaCopos ? CNC_LIMITS.porta_copos : CNC_LIMITS.tabua_carne;
+      const MAX_X_LIMIT_CM = limits.maxXCm; // 16.0 cm
+      const MAX_Y_LIMIT_CM = limits.maxYCm; // 25.0 cm
+      const MIN_DIMENSION_LIMIT_CM = limits.minDimCm;
 
-      if (activeHandle === 'se') {
-        newWidthCm = Math.max(2.5, startWidth + deltaWidthCm);
-        newHeightCm = newWidthCm / aspect;
-      } else if (activeHandle === 'nw') {
-        newWidthCm = Math.max(2.5, startWidth - deltaWidthCm);
-        newHeightCm = newWidthCm / aspect;
-      } else if (activeHandle === 'ne') {
-        newWidthCm = Math.max(2.5, startWidth + deltaWidthCm);
-        newHeightCm = newWidthCm / aspect;
-      } else if (activeHandle === 'sw') {
-        newWidthCm = Math.max(2.5, startWidth - deltaWidthCm);
-        newHeightCm = newWidthCm / aspect;
+      const maxSafeW = Math.max(MIN_DIMENSION_LIMIT_CM, maxSafeWidthCm);
+      const maxSafeH = Math.max(MIN_DIMENSION_LIMIT_CM, maxSafeHeightCm);
+      const maxAllowedWidthCm = Math.min(MAX_X_LIMIT_CM, maxSafeW);
+      const maxAllowedHeightCm = Math.min(MAX_Y_LIMIT_CM, maxSafeH);
+
+      let newWidthCm = startWidth;
+      if (activeHandle === 'se' || activeHandle === 'ne') {
+        newWidthCm = startWidth + deltaWidthCm;
+      } else {
+        newWidthCm = startWidth - deltaWidthCm;
       }
 
-      // Restrição física: Não pode exceder as dimensões físicas da tábua
-      const maxAllowedWidthCm = lengthCm - 1;
-      const maxAllowedHeightCm = widthCm - 1;
+      let newHeightCm = newWidthCm / aspect;
 
+      // Preserva a proporção original das imagens sem ultrapassar os limites de nenhum dos eixos (X <= 16, Y <= 25)
       if (newWidthCm > maxAllowedWidthCm) {
         newWidthCm = maxAllowedWidthCm;
         newHeightCm = newWidthCm / aspect;
       }
       if (newHeightCm > maxAllowedHeightCm) {
         newHeightCm = maxAllowedHeightCm;
+        newWidthCm = newHeightCm * aspect;
+      }
+      if (newWidthCm > maxAllowedWidthCm) {
+        newWidthCm = maxAllowedWidthCm;
+        newHeightCm = newWidthCm / aspect;
+      }
+
+      // Limite Mínimo Dimensional
+      if (newWidthCm < MIN_DIMENSION_LIMIT_CM) {
+        newWidthCm = MIN_DIMENSION_LIMIT_CM;
+        newHeightCm = newWidthCm / aspect;
+      }
+      if (newHeightCm < MIN_DIMENSION_LIMIT_CM) {
+        newHeightCm = MIN_DIMENSION_LIMIT_CM;
         newWidthCm = newHeightCm * aspect;
       }
 
@@ -387,17 +405,32 @@ export const InteractiveBoardCanvas: React.FC<InteractiveBoardCanvasProps> = ({
       if (Math.abs(newX - 50) < 1.2) newX = 50;
       if (Math.abs(newY - 50) < 1.2) newY = 50;
 
-      // Restrição estrita de bordas: O elemento NUNCA sai da tábua
+      // Restrição estrita de bordas: O elemento NUNCA sai da área útil da peça
       const halfWPercent = ((selectedElement.widthCm / lengthCm) * 100) / 2;
       const halfHPercent = ((selectedElement.heightCm / widthCm) * 100) / 2;
+      const safeMarginPercentX = (safeMarginCm / lengthCm) * 100;
+      const safeMarginPercentY = (safeMarginCm / widthCm) * 100;
 
-      newX = Math.max(halfWPercent + 1, Math.min(100 - halfWPercent - 1, newX));
-      newY = Math.max(halfHPercent + 1, Math.min(100 - halfHPercent - 1, newY));
+      const minX = halfWPercent + safeMarginPercentX;
+      const maxX = 100 - halfWPercent - safeMarginPercentX;
+      const minY = halfHPercent + safeMarginPercentY;
+      const maxY = 100 - halfHPercent - safeMarginPercentY;
+
+      if (maxX >= minX) {
+        newX = Math.max(minX, Math.min(maxX, newX));
+      } else {
+        newX = 50;
+      }
+      if (maxY >= minY) {
+        newY = Math.max(minY, Math.min(maxY, newY));
+      } else {
+        newY = 50;
+      }
 
       onUpdateElement({
         ...selectedElement,
-        xPercent: newX,
-        yPercent: newY,
+        xPercent: +newX.toFixed(2),
+        yPercent: +newY.toFixed(2),
       });
     }
   };
@@ -602,7 +635,7 @@ export const InteractiveBoardCanvas: React.FC<InteractiveBoardCanvasProps> = ({
                 left: `${safeMarginPx}px`,
                 right: `${safeMarginPx}px`,
                 bottom: `${safeMarginPx}px`,
-                borderRadius: `${Math.max(4, grooveRadiusPx - 4)}px`,
+                borderRadius: '0px',
               }}
             >
               <span className="absolute top-1 left-1.5 text-[8px] font-mono text-[#C29B68]/60 uppercase">
@@ -689,7 +722,7 @@ export const InteractiveBoardCanvas: React.FC<InteractiveBoardCanvasProps> = ({
                         fontStyle: el.isItalic ? 'italic' : 'normal',
                         color:
                           previewMode === 'monocromatico_cnc'
-                            ? '#000000'
+                            ? '#2A1E17'
                             : isResin
                             ? '#140D09'
                             : '#25150C',
@@ -763,9 +796,11 @@ export const InteractiveBoardCanvas: React.FC<InteractiveBoardCanvasProps> = ({
                       </div>
 
                       {/* Badge Flutuante de Dimensões Reais em cm */}
-                      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-black/90 text-[#E6DAC8] border border-white/20 text-[9px] font-mono px-2 py-0.5 whitespace-nowrap pointer-events-none shadow-md z-30">
-                        {el.widthCm.toFixed(1)} × {el.heightCm.toFixed(1)} cm
-                        {el.rotationDeg !== 0 && ` (${el.rotationDeg}°)`}
+                      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-[#1C140F]/95 text-[#E6DAC8] border border-[#C29B68]/30 text-[9px] font-mono px-2 py-0.5 whitespace-nowrap pointer-events-none shadow-md z-30 flex items-center gap-1.5">
+                        <span className="text-[#FAF8F5]">{el.widthCm.toFixed(1)} × {el.heightCm.toFixed(1)} cm</span>
+                        <span className="text-[#C29B68]/40">·</span>
+                        <span className="text-[#C29B68] font-bold">Máx: {isPortaCopos ? '8,5 cm' : 'X: 16,0 cm × Y: 25,0 cm'}</span>
+                        {el.rotationDeg !== 0 && <span className="text-[#DFD3C3]">({el.rotationDeg}°)</span>}
                       </div>
                     </>
                   )}
@@ -773,7 +808,7 @@ export const InteractiveBoardCanvas: React.FC<InteractiveBoardCanvasProps> = ({
                   {/* Indicador de colisão com a canaleta */}
                   {hasCollision && (
                     <div
-                      className="absolute -top-7 -right-7 p-1 bg-red-600 text-white rounded-full shadow-lg pointer-events-none animate-pulse z-40"
+                      className="absolute -top-7 -right-7 p-1 bg-[#8B221B] text-[#FAF8F5] rounded-full shadow-lg pointer-events-none animate-pulse z-40"
                       title="Aviso: Elemento ultrapassa a margem de segurança da canaleta"
                     >
                       <AlertTriangle className="w-3.5 h-3.5" />
@@ -790,7 +825,7 @@ export const InteractiveBoardCanvas: React.FC<InteractiveBoardCanvasProps> = ({
         <div className="w-full mt-2.5 p-2.5 bg-[#1C140F] border border-[#DFD3C3]/30 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs text-[#FAF8F5] animate-fadeIn">
           {/* Informações Dimensionais & Posição em Relação à Área Útil */}
           <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#DFD3C3]">
-            <span className="font-semibold text-white truncate max-w-[130px] sm:max-w-[180px]">
+            <span className="font-semibold text-[#FAF8F5] truncate max-w-[130px] sm:max-w-[180px]">
               {selectedElement.type === 'text'
                 ? `"${selectedElement.text}"`
                 : selectedElement.imageFileName || 'Arte Vetorial'}
@@ -798,19 +833,22 @@ export const InteractiveBoardCanvas: React.FC<InteractiveBoardCanvasProps> = ({
             <span className="text-[#C29B68] font-mono font-bold">
               {selectedElement.widthCm.toFixed(1)} × {selectedElement.heightCm.toFixed(1)} cm
             </span>
-            <span className="text-white/30">|</span>
-            <span className="font-mono text-[10px] text-white/60">
+            <span className="text-[10px] text-[#DFD3C3]/70 font-mono">
+              (Máx: {isPortaCopos ? '8,5 cm' : 'X: 16,0 cm | Y: 25,0 cm'})
+            </span>
+            <span className="text-[#C29B68]/30">|</span>
+            <span className="font-mono text-[10px] text-[#DFD3C3]/80">
               Posição: {selectedElement.xPercent.toFixed(0)}% X · {selectedElement.yPercent.toFixed(0)}% Y
             </span>
-            <span className="text-white/30">|</span>
+            <span className="text-[#C29B68]/30">|</span>
             {hasSelectedCollision ? (
-              <span className="text-red-400 font-semibold flex items-center gap-1 text-[10px]">
-                <AlertTriangle className="w-3 h-3 text-red-400" />
+              <span className="text-[#E89994] font-semibold flex items-center gap-1 text-[10px]">
+                <AlertTriangle className="w-3 h-3 text-[#E89994]" />
                 <span>Próximo à Canaleta</span>
               </span>
             ) : (
-              <span className="text-emerald-400 font-semibold flex items-center gap-1 text-[10px]">
-                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+              <span className="text-[#C29B68] font-semibold flex items-center gap-1 text-[10px]">
+                <CheckCircle2 className="w-3 h-3 text-[#C29B68]" />
                 <span>Área Útil OK</span>
               </span>
             )}
@@ -822,77 +860,77 @@ export const InteractiveBoardCanvas: React.FC<InteractiveBoardCanvasProps> = ({
             <button
               type="button"
               onClick={() => onAlignElement(selectedElement.id, 'center_h')}
-              className="p-1.5 bg-black/50 hover:bg-[#8A5835] text-white transition-colors cursor-pointer border border-white/10"
+              className="p-1.5 bg-[#2A1E17] hover:bg-[#8A5835] text-[#FAF8F5] transition-colors cursor-pointer border border-[#DFD3C3]/20"
               title="Centralizar Horizontalmente na Peça"
             >
-              <AlignHorizontalDistributeCenter className="w-3.5 h-3.5" />
+              <AlignHorizontalDistributeCenter className="w-3.5 h-3.5 text-[#C29B68]" />
             </button>
 
             {/* Centralizar Verticalmente */}
             <button
               type="button"
               onClick={() => onAlignElement(selectedElement.id, 'center_v')}
-              className="p-1.5 bg-black/50 hover:bg-[#8A5835] text-white transition-colors cursor-pointer border border-white/10"
+              className="p-1.5 bg-[#2A1E17] hover:bg-[#8A5835] text-[#FAF8F5] transition-colors cursor-pointer border border-[#DFD3C3]/20"
               title="Centralizar Verticalmente na Peça"
             >
-              <AlignVerticalDistributeCenter className="w-3.5 h-3.5" />
+              <AlignVerticalDistributeCenter className="w-3.5 h-3.5 text-[#C29B68]" />
             </button>
 
             {/* Girar para a Esquerda (-15°) */}
             <button
               type="button"
               onClick={() => handleRotateDelta(-15)}
-              className="p-1.5 bg-black/50 hover:bg-[#8A5835] text-white transition-colors cursor-pointer border border-white/10"
+              className="p-1.5 bg-[#2A1E17] hover:bg-[#8A5835] text-[#FAF8F5] transition-colors cursor-pointer border border-[#DFD3C3]/20"
               title="Girar 15° para a Esquerda"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-3.5 h-3.5 text-[#C29B68]" />
             </button>
 
             {/* Girar para a Direita (+15°) */}
             <button
               type="button"
               onClick={() => handleRotateDelta(15)}
-              className="p-1.5 bg-black/50 hover:bg-[#8A5835] text-white transition-colors cursor-pointer border border-white/10"
+              className="p-1.5 bg-[#2A1E17] hover:bg-[#8A5835] text-[#FAF8F5] transition-colors cursor-pointer border border-[#DFD3C3]/20"
               title="Girar 15° para a Direita"
             >
-              <RotateCw className="w-3.5 h-3.5" />
+              <RotateCw className="w-3.5 h-3.5 text-[#C29B68]" />
             </button>
 
             {/* Trazer para Frente (Z-Index) */}
             <button
               type="button"
               onClick={() => onBringForward(selectedElement.id)}
-              className="p-1.5 bg-black/50 hover:bg-[#8A5835] text-white transition-colors cursor-pointer border border-white/10"
+              className="p-1.5 bg-[#2A1E17] hover:bg-[#8A5835] text-[#FAF8F5] transition-colors cursor-pointer border border-[#DFD3C3]/20"
               title="Trazer para Frente (Camada Acima)"
             >
-              <ArrowUp className="w-3.5 h-3.5" />
+              <ArrowUp className="w-3.5 h-3.5 text-[#DFD3C3]" />
             </button>
 
             {/* Enviar para Trás (Z-Index) */}
             <button
               type="button"
               onClick={() => onSendBackward(selectedElement.id)}
-              className="p-1.5 bg-black/50 hover:bg-[#8A5835] text-white transition-colors cursor-pointer border border-white/10"
+              className="p-1.5 bg-[#2A1E17] hover:bg-[#8A5835] text-[#FAF8F5] transition-colors cursor-pointer border border-[#DFD3C3]/20"
               title="Enviar para Trás (Camada Abaixo)"
             >
-              <ArrowDown className="w-3.5 h-3.5" />
+              <ArrowDown className="w-3.5 h-3.5 text-[#DFD3C3]" />
             </button>
 
             {/* Duplicar */}
             <button
               type="button"
               onClick={() => onDuplicateElement(selectedElement.id)}
-              className="p-1.5 bg-black/50 hover:bg-[#8A5835] text-white transition-colors cursor-pointer border border-white/10"
+              className="p-1.5 bg-[#2A1E17] hover:bg-[#8A5835] text-[#FAF8F5] transition-colors cursor-pointer border border-[#DFD3C3]/20"
               title="Duplicar Elemento"
             >
-              <Copy className="w-3.5 h-3.5" />
+              <Copy className="w-3.5 h-3.5 text-[#C29B68]" />
             </button>
 
             {/* Excluir */}
             <button
               type="button"
               onClick={() => onDeleteElement(selectedElement.id)}
-              className="p-1.5 bg-red-950/80 hover:bg-red-700 text-red-200 transition-colors cursor-pointer border border-red-500/30"
+              className="p-1.5 bg-[#2E1412] hover:bg-[#8B221B] text-[#E89994] hover:text-[#FAF8F5] transition-colors cursor-pointer border border-[#B54A42]/40"
               title="Excluir Elemento da Composição"
             >
               <Trash2 className="w-3.5 h-3.5" />

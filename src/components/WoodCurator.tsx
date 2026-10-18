@@ -121,14 +121,6 @@ export const WoodCurator: React.FC<WoodCuratorProps> = ({
               );
             })}
           </div>
-
-          {/* Indicador sutil de deslizamento lateral no mobile */}
-          <div className="flex lg:hidden items-center justify-between pt-1 px-1 text-[11px] text-[#8A5835] font-medium select-none">
-            <span>← Deslize para explorar as 4 madeiras →</span>
-            <span className="text-[10px] text-[#5C4033]">
-              {ATELIER_WOODS_LIST.findIndex((w) => w.id === activeWoodId) + 1} de {ATELIER_WOODS_LIST.length}
-            </span>
-          </div>
         </div>
 
         {/* Selected Wood Callout */}

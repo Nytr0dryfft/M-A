@@ -35,6 +35,7 @@ import {
   TechnicalAnalysis,
   BudgetBreakdown,
   OrderQuoteData,
+  CNC_LIMITS,
 } from '../types/configurator';
 import { ATELIER_WOODS_LIST, getWoodById, DEFAULT_WOOD } from '../data/woods';
 import { processUploadedFile, ImageUploadResult } from '../utils/imageUpload';
@@ -43,25 +44,16 @@ import { InteractiveBoardCanvas } from './configurator/InteractiveBoardCanvas';
 import { QuoteReviewModal } from './configurator/QuoteReviewModal';
 import { VectorizeModal } from './configurator/VectorizeModal';
 
-// Opções de Técnicas de Usinagem CNC do Atelier
+// Opção Única e Exclusiva de Técnica de Usinagem CNC do Atelier
 const CNC_TECHNIQUES: CncTechniqueOption[] = [
   {
     id: 'baixo_relevo_resina',
     name: 'Baixo-Relevo CNC com Resina Epóxi Atóxica',
-    shortDesc: 'Usinagem profunda com preenchimento em resina culinária polida à mão',
-    badge: 'Mais Pedido · Impermeável',
+    shortDesc: 'Usinagem de precisão CNC com preenchimento em resina epóxi atóxica polida à mão',
+    badge: 'Padrão do Atelier · Impermeável',
     priceModifier: 15.0,
     applicableTo: ['tabua_carne', 'porta_copos'],
     isResin: true,
-  },
-  {
-    id: 'baixo_relevo_puro',
-    name: 'Baixo-Relevo em Madeira Pura Maciça',
-    shortDesc: 'Entalhe escavado na própria madeira preservando as fibras e veios',
-    badge: '100% Madeira Pura',
-    priceModifier: 0.0,
-    applicableTo: ['tabua_carne', 'porta_copos'],
-    isResin: false,
   },
 ];
 
@@ -129,11 +121,14 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
 
   // 4. Modos de Visualização & Interface
   const [previewMode, setPreviewMode] = useState<PreviewMode>('realista');
-  const [activeMobileTab, setActiveMobileTab] = useState<'config' | 'canvas' | 'art' | 'summary'>('canvas');
+  const [activeMobileTab, setActiveMobileTab] = useState<'config' | 'canvas' | 'summary'>('canvas');
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string>('');
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
   const [isReviewOpen, setIsReviewOpen] = useState<boolean>(false);
+  const [sessionOrderId, setSessionOrderId] = useState<string>(() => {
+    return `ORD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+  });
   const [snapshotUrl, setSnapshotUrl] = useState<string>('');
   const [pendingUploadForVectorize, setPendingUploadForVectorize] = useState<ImageUploadResult | null>(null);
   const [isVectorizeModalOpen, setIsVectorizeModalOpen] = useState<boolean>(false);
@@ -246,7 +241,52 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
     [finishId]
   );
 
-  // 5. Upload e Processamento de Arquivos (SVG Direto ou Vetorização Interativa para Raster)
+  // 5. Helper de limites dimensionais estritos para artes e imagens CNC
+  // REGRA ESTRITA: O brasão / arte NUNCA ultrapassa 16 cm no eixo X e 25 cm no eixo Y (8.5 cm no porta-copos)
+  const calculateInitialImageDimensions = (aspect: number) => {
+    const grooveMarginCm = 1.8;
+    const grooveWidthCm = 1.0;
+    const safeMarginCm = isPortaCopos ? 1.0 : grooveMarginCm + grooveWidthCm + 0.8;
+    const maxSafeW = Math.max(2.5, lengthCm - 2 * safeMarginCm);
+    const maxSafeH = Math.max(2.5, widthCm - 2 * safeMarginCm);
+    const limits = isPortaCopos ? CNC_LIMITS.porta_copos : CNC_LIMITS.tabua_carne;
+    const MAX_X_LIMIT_CM = limits.maxXCm; // 16.0 cm no eixo X (nunca 17 cm)
+    const MAX_Y_LIMIT_CM = limits.maxYCm; // 25.0 cm no eixo Y
+
+    let targetWidthCm = isPortaCopos
+      ? Math.min(6.5, maxSafeW, MAX_X_LIMIT_CM)
+      : Math.min(14.0, maxSafeW * 0.75, MAX_X_LIMIT_CM);
+    let targetHeightCm = targetWidthCm / aspect;
+
+    // Se a altura calculada ultrapassar a área segura ou o limite do eixo Y (25 cm), reescala pela altura
+    if (targetHeightCm > Math.min(MAX_Y_LIMIT_CM, maxSafeH)) {
+      targetHeightCm = Math.min(MAX_Y_LIMIT_CM, maxSafeH);
+      targetWidthCm = targetHeightCm * aspect;
+    }
+
+    // Se a largura calculada ultrapassar a área segura ou o limite do eixo X (16 cm), reescala pela largura
+    if (targetWidthCm > Math.min(MAX_X_LIMIT_CM, maxSafeW)) {
+      targetWidthCm = Math.min(MAX_X_LIMIT_CM, maxSafeW);
+      targetHeightCm = targetWidthCm / aspect;
+    }
+
+    // Garante que nenhum dos dois eixos exceda os limites estritos (X <= 16, Y <= 25)
+    if (targetWidthCm > MAX_X_LIMIT_CM) {
+      targetWidthCm = MAX_X_LIMIT_CM;
+      targetHeightCm = targetWidthCm / aspect;
+    }
+    if (targetHeightCm > MAX_Y_LIMIT_CM) {
+      targetHeightCm = MAX_Y_LIMIT_CM;
+      targetWidthCm = targetHeightCm * aspect;
+    }
+
+    return {
+      widthCm: +Math.max(limits.minDimCm, targetWidthCm).toFixed(2),
+      heightCm: +Math.max(limits.minDimCm, targetHeightCm).toFixed(2),
+    };
+  };
+
+  // 6. Upload e Processamento de Arquivos (SVG Direto ou Vetorização Interativa para Raster)
   const handleFileUpload = async (file: File) => {
     try {
       setIsUploading(true);
@@ -255,19 +295,16 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
 
       // A. Se for SVG Válido e Sanitizado: insere diretamente como arte vetorial pronta
       if (result.isSvg) {
-        const aspect = result.width / result.height;
-        const initialWidthCm = isPortaCopos
-          ? Math.min(6.5, lengthCm - 3)
-          : Math.min(15, lengthCm * 0.45);
-        const initialHeightCm = +(initialWidthCm / aspect).toFixed(2);
+        const aspect = result.width / result.height || 1;
+        const dims = calculateInitialImageDimensions(aspect);
 
         const newElement: CanvasElement = {
           id: `el-svg-${Date.now()}`,
           type: 'image',
           xPercent: 50,
           yPercent: 50,
-          widthCm: +initialWidthCm.toFixed(2),
-          heightCm: initialHeightCm,
+          widthCm: dims.widthCm,
+          heightCm: dims.heightCm,
           rotationDeg: 0,
           zIndex: elements.length + 1,
           aspectRatio: aspect,
@@ -280,6 +317,8 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
           isSvg: true,
           isVectorized: false,
           hasAlpha: true,
+          rawSvgText: result.rawSvgString,
+          sanitizedSvgText: result.sanitizedSvgString,
         };
 
         const updated = [...elements, newElement];
@@ -307,18 +346,15 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
     height: number
   ) => {
     const aspect = width / height || 1;
-    const initialWidthCm = isPortaCopos
-      ? Math.min(6.5, lengthCm - 3)
-      : Math.min(15, lengthCm * 0.45);
-    const initialHeightCm = +(initialWidthCm / aspect).toFixed(2);
+    const dims = calculateInitialImageDimensions(aspect);
 
     const newElement: CanvasElement = {
       id: `el-vec-${Date.now()}`,
       type: 'image',
       xPercent: 50,
       yPercent: 50,
-      widthCm: +initialWidthCm.toFixed(2),
-      heightCm: initialHeightCm,
+      widthCm: dims.widthCm,
+      heightCm: dims.heightCm,
       rotationDeg: 0,
       zIndex: elements.length + 1,
       aspectRatio: aspect,
@@ -343,18 +379,15 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
   // Aplicação da imagem original rasterizada para análise técnica do atelier
   const handleUseOriginalRaster = (res: ImageUploadResult) => {
     const aspect = res.width / res.height || 1;
-    const initialWidthCm = isPortaCopos
-      ? Math.min(6.5, lengthCm - 3)
-      : Math.min(15, lengthCm * 0.45);
-    const initialHeightCm = +(initialWidthCm / aspect).toFixed(2);
+    const dims = calculateInitialImageDimensions(aspect);
 
     const newElement: CanvasElement = {
       id: `el-raster-${Date.now()}`,
       type: 'image',
       xPercent: 50,
       yPercent: 50,
-      widthCm: +initialWidthCm.toFixed(2),
-      heightCm: initialHeightCm,
+      widthCm: dims.widthCm,
+      heightCm: dims.heightCm,
       rotationDeg: 0,
       zIndex: elements.length + 1,
       aspectRatio: aspect,
@@ -399,7 +432,8 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
     if (!inputText.trim()) return;
 
     const aspect = 4; // Aspecto padrão de faixa de texto
-    const textWidthCm = isPortaCopos ? 6.5 : 16;
+    const limits = isPortaCopos ? CNC_LIMITS.porta_copos : CNC_LIMITS.tabua_carne;
+    const textWidthCm = isPortaCopos ? 6.5 : limits.maxXCm; // 16 cm travado no eixo X
     const textHeightCm = +(textWidthCm / aspect).toFixed(2);
 
     const newElement: CanvasElement = {
@@ -499,6 +533,8 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
     let hasLowRes = false;
     let needsVec = false;
     let minDpi = 300;
+    let hasLimitOverflow = false;
+    const limits = isPortaCopos ? CNC_LIMITS.porta_copos : CNC_LIMITS.tabua_carne;
     const warnings: string[] = [];
     const recommendations: string[] = [];
 
@@ -507,6 +543,11 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
       const centerY = (el.yPercent / 100) * widthCm;
       const halfW = el.widthCm / 2;
       const halfH = el.heightCm / 2;
+
+      // Verificação estrita de limites dimensionais CNC (X <= 16cm, Y <= 25cm)
+      if (el.widthCm > limits.maxXCm + 0.05 || el.heightCm > limits.maxYCm + 0.05) {
+        hasLimitOverflow = true;
+      }
 
       // Colisão com canaleta/margem
       if (
@@ -535,6 +576,12 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
         }
       }
     });
+
+    if (hasLimitOverflow) {
+      warnings.push(
+        `Elemento excede o limite máximo físico CNC (${limits.maxXCm} cm de largura no eixo X ou ${limits.maxYCm} cm de altura no eixo Y).`
+      );
+    }
 
     if (hasCollision) {
       warnings.push(
@@ -681,10 +728,10 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
     technicalAnalysis.needsVectorization,
   ]);
 
-  // Monta objeto completo da solicitação de orçamento
+  // Monta objeto completo da solicitação de orçamento com identificador estável
   const currentOrderData: OrderQuoteData = useMemo(() => {
     return {
-      orderId: `ORD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      orderId: sessionOrderId,
       createdAt: new Date().toISOString(),
       pieceType,
       pieceLabel: isCuttingBoard ? 'Tábua de Carne Sob Medida' : 'Porta-Copos Personalizado',
@@ -708,6 +755,7 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
       previewDataUrl: snapshotUrl,
     };
   }, [
+    sessionOrderId,
     pieceType,
     isCuttingBoard,
     woodType,
@@ -728,6 +776,8 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
         `Orçamento Solicitado (${finalOrder.orderId}): ${finalOrder.pieceLabel} em ${finalOrder.woodName} (${finalOrder.dimensions.lengthCm}x${finalOrder.dimensions.widthCm}cm). Total estimado: R$ ${finalOrder.budget.totalEstimated.toFixed(2).replace('.', ',')}`
       );
     }
+    // Prepara novo identificador único para o próximo projeto autoral
+    setSessionOrderId(`ORD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
   };
 
   return (
@@ -785,12 +835,12 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
         </div>
 
         {/* Abas Rápidas no Mobile para Evitar Rolagem Excessiva */}
-        <div className="flex lg:hidden items-center justify-between bg-[#1A1410] border border-white/10 p-1 mb-4 text-xs font-bold uppercase tracking-wider overflow-x-auto">
+        <div className="grid grid-cols-3 lg:hidden bg-[#1A1410] border border-[#DFD3C3]/20 p-1 mb-4 text-xs font-bold uppercase tracking-wider">
           <button
             type="button"
             onClick={() => setActiveMobileTab('config')}
-            className={`flex-1 py-2 text-center whitespace-nowrap px-2 ${
-              activeMobileTab === 'config' ? 'bg-[#C29B68] text-[#111]' : 'text-[#DFD3C3]'
+            className={`py-2 text-center whitespace-nowrap px-1 text-[11px] sm:text-xs transition-colors cursor-pointer ${
+              activeMobileTab === 'config' ? 'bg-[#C29B68] text-[#2A1E17]' : 'text-[#DFD3C3]'
             }`}
           >
             1. Peça &amp; Madeira
@@ -798,29 +848,20 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
           <button
             type="button"
             onClick={() => setActiveMobileTab('canvas')}
-            className={`flex-1 py-2 text-center whitespace-nowrap px-2 ${
-              activeMobileTab === 'canvas' ? 'bg-[#C29B68] text-[#111]' : 'text-[#DFD3C3]'
+            className={`py-2 text-center whitespace-nowrap px-1 text-[11px] sm:text-xs transition-colors cursor-pointer ${
+              activeMobileTab === 'canvas' ? 'bg-[#C29B68] text-[#2A1E17]' : 'text-[#DFD3C3]'
             }`}
           >
             2. Editor Visual
           </button>
           <button
             type="button"
-            onClick={() => setActiveMobileTab('art')}
-            className={`flex-1 py-2 text-center whitespace-nowrap px-2 ${
-              activeMobileTab === 'art' ? 'bg-[#C29B68] text-[#111]' : 'text-[#DFD3C3]'
-            }`}
-          >
-            3. Arte &amp; Textos
-          </button>
-          <button
-            type="button"
             onClick={() => setActiveMobileTab('summary')}
-            className={`flex-1 py-2 text-center whitespace-nowrap px-2 ${
-              activeMobileTab === 'summary' ? 'bg-[#C29B68] text-[#111]' : 'text-[#DFD3C3]'
+            className={`py-2 text-center whitespace-nowrap px-1 text-[11px] sm:text-xs transition-colors cursor-pointer ${
+              activeMobileTab === 'summary' ? 'bg-[#C29B68] text-[#2A1E17]' : 'text-[#DFD3C3]'
             }`}
           >
-            4. Orçamento
+            3. Orçamento
           </button>
         </div>
 
@@ -828,18 +869,17 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
           {/* =========================================================
               PAINEL A: CONFIGURAÇÃO DE MADEIRA, DIMENSÕES & ARTE
-              (Desktop: 4 colunas / Mobile: abas 'config' e 'art')
+              (Desktop: 4 colunas / Mobile: aba 'config')
              ========================================================= */}
           <div
             className={`lg:col-span-4 flex-col gap-4 sm:gap-5 ${
-              activeMobileTab === 'config' || activeMobileTab === 'art' ? 'flex' : 'hidden lg:flex'
+              activeMobileTab === 'config' ? 'flex' : 'hidden lg:flex'
             }`}
           >
             {/* Bloco 1: Seleção de Madeira & Dimensões */}
-            {(activeMobileTab === 'config' || activeMobileTab === 'canvas') && (
-              <div className="p-4 sm:p-5 bg-[#FAF8F5] text-[#111111] border border-[#DFD3C3] shadow-md space-y-4">
-                <div className="flex items-center justify-between border-b border-[#DFD3C3]/80 pb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#8A5835] flex items-center gap-1.5">
+            <div className="p-4 sm:p-5 bg-[#FAF8F5] text-[#111111] border border-[#DFD3C3] shadow-md space-y-4">
+              <div className="flex items-center justify-between border-b border-[#DFD3C3]/80 pb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#8A5835] flex items-center gap-1.5">
                     <TreePine className="w-3.5 h-3.5" />
                     <span>Madeira do Atelier</span>
                   </span>
@@ -921,52 +961,30 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
                   </div>
                 </div>
 
-                {/* Técnica de Usinagem CNC */}
+                {/* Técnica de Usinagem */}
                 <div className="pt-2 border-t border-[#DFD3C3]/60 space-y-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-[#8A5835] block">
-                    Técnica de Usinagem CNC
+                    Técnica de Usinagem
                   </span>
-                  <div className="space-y-1.5">
-                    {CNC_TECHNIQUES.map((tech) => (
-                      <label
-                        key={tech.id}
-                        className={`flex items-start gap-2.5 p-2 border text-xs cursor-pointer transition-colors ${
-                          techniqueId === tech.id
-                            ? 'border-[#8A5835] bg-[#FAF3EA]'
-                            : 'border-[#DFD3C3] bg-white hover:border-[#8A5835]/40'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="technique"
-                          checked={techniqueId === tech.id}
-                          onChange={() => setTechniqueId(tech.id)}
-                          className="mt-0.5 accent-[#8A5835]"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-[#111]">{tech.name}</span>
-                            {tech.priceModifier > 0 && (
-                              <span className="text-[10px] font-mono text-[#8A5835] font-bold">
-                                +R$ {tech.priceModifier.toFixed(2).replace('.', ',')}
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-[#5C4033] block leading-tight">
-                            {tech.shortDesc}
-                          </span>
-                        </div>
-                      </label>
-                    ))}
+                  <div className="p-2.5 border-2 border-[#8A5835] bg-[#FAF3EA] text-xs shadow-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-[#1C1917]">
+                        Baixo-Relevo CNC com Resina Epóxi Atóxica
+                      </span>
+                      <span className="text-[9px] uppercase tracking-wider font-bold text-[#8A5835] bg-[#8A5835]/10 px-2 py-0.5 border border-[#8A5835]/30 shrink-0">
+                        Padrão do Atelier
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-[#5C4033] block leading-tight mt-1.5">
+                      Usinagem profunda com preenchimento em resina culinária atóxica polida à mão. Acabamento impermeável de alto padrão em todas as peças.
+                    </span>
                   </div>
                 </div>
               </div>
-            )}
 
-            {/* Bloco 2: Upload de Imagens & Textos Personalizados */}
-            {(activeMobileTab === 'art' || activeMobileTab === 'canvas' || activeMobileTab === 'config') && (
-              <div className="p-4 sm:p-5 bg-[#FAF8F5] text-[#111111] border border-[#DFD3C3] shadow-md space-y-4">
-                <div className="flex items-center justify-between border-b border-[#DFD3C3]/80 pb-2">
+            {/* Bloco 2: A Única Opção Principal de Arte & Textos Personalizados */}
+            <div className="p-4 sm:p-5 bg-[#FAF8F5] text-[#111111] border border-[#DFD3C3] shadow-md space-y-4">
+              <div className="flex items-center justify-between border-b border-[#DFD3C3]/80 pb-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-[#8A5835] flex items-center gap-1.5">
                     <Upload className="w-3.5 h-3.5" />
                     <span>Upload de Arte (SVG, PNG, JPG, WEBP)</span>
@@ -1029,23 +1047,49 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
                       onChange={(e) => setInputText(e.target.value)}
                       placeholder="Ex: Família Silveira · 2026"
                       maxLength={40}
-                      className="flex-1 px-3 py-2 bg-white border border-[#DFD3C3] text-xs text-[#111] focus:outline-[#8A5835]"
+                      className="flex-1 px-3 py-2 bg-white border border-[#DFD3C3] text-xs text-[#3E2D22] focus:outline-[#8A5835] placeholder:text-[#8A5835]/50"
                     />
                     <button
                       type="button"
                       onClick={handleAddText}
-                      className="px-3 py-2 bg-[#2A1E17] hover:bg-[#8A5835] text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                      className="px-3 py-2 bg-[#2A1E17] hover:bg-[#8A5835] text-[#FAF8F5] text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
                     >
                       Inserir
                     </button>
                   </div>
+
+                  {/* Seleção de Tipografia e Estilo em tons de marrom */}
+                  <div className="flex items-center gap-2 pt-1 text-xs">
+                    <select
+                      value={selectedFont}
+                      onChange={(e) => setSelectedFont(e.target.value)}
+                      className="flex-1 px-2.5 py-1.5 bg-white border border-[#DFD3C3] text-[11px] text-[#3E2D22] focus:outline-[#8A5835] cursor-pointer"
+                    >
+                      {AVAILABLE_FONTS.map((f) => (
+                        <option key={f.id} value={f.fontFamily}>
+                          {f.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setIsTextBold(!isTextBold)}
+                      className={`px-3 py-1.5 border text-xs font-bold transition-colors cursor-pointer ${
+                        isTextBold
+                          ? 'border-[#8A5835] bg-[#FAF3EA] text-[#8A5835]'
+                          : 'border-[#DFD3C3] bg-white text-[#5C4033] hover:text-[#3E2D22]'
+                      }`}
+                      title="Alternar Negrito"
+                    >
+                      B
+                    </button>
+                  </div>
                 </div>
               </div>
-            )}
           </div>
 
           {/* =========================================================
-              ÁREA CENTRAL B: EDITOR VISUAL INTERATIVO
+              ÁREA CENTRAL B: EDITOR VISUAL INTERATIVO & VIABILIDADE INTEGRADA
               (Desktop: 5 colunas / Mobile: aba 'canvas')
              ========================================================= */}
           <div
@@ -1053,6 +1097,67 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
               activeMobileTab === 'canvas' ? 'flex' : 'hidden lg:flex'
             }`}
           >
+            {/* PAINEL INTEGRADO DE VIABILIDADE CNC (DIRETO NO EDITOR VISUAL) */}
+            <div className="w-full bg-[#1C140F] border border-[#DFD3C3]/25 p-3 text-xs shadow-lg space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 text-[#C29B68]" />
+                  <span className="font-bold uppercase tracking-wider text-[#FAF3EA] text-[11px]">
+                    Viabilidade CNC em Tempo Real
+                  </span>
+                </div>
+                <span
+                  className={`text-[9px] font-bold uppercase px-2 py-0.5 border ${
+                    technicalAnalysis.status === 'aprovado_previa'
+                      ? 'bg-[#2A1E17] text-[#C29B68] border-[#C29B68]/60'
+                      : technicalAnalysis.status === 'atencao'
+                      ? 'bg-[#2E2010] text-[#E0B16D] border-[#C29B68]/50'
+                      : 'bg-[#2E1412] text-[#E89994] border-[#B54A42]/50'
+                  }`}
+                >
+                  {technicalAnalysis.status === 'aprovado_previa'
+                    ? '✓ 100% Aprovado'
+                    : technicalAnalysis.status === 'atencao'
+                    ? '⚠ Análise Recomendada'
+                    : '✕ Ajuste Necessário'}
+                </span>
+              </div>
+
+              {/* Indicadores rápidos de validação técnica */}
+              <div className="grid grid-cols-3 gap-1.5 text-[10px] font-mono">
+                <div className="p-1.5 bg-[#140D0A] border border-[#DFD3C3]/10 flex flex-col">
+                  <span className="text-[#C29B68] text-[9px] font-semibold">ÁREA ÚTIL:</span>
+                  <span className={technicalAnalysis.hasGrooveCollision ? 'text-[#E89994] font-bold' : 'text-[#C29B68] font-bold'}>
+                    {technicalAnalysis.hasGrooveCollision ? '⚠ Colide Canaleta' : '✓ Zona Segura'}
+                  </span>
+                </div>
+                <div className="p-1.5 bg-[#140D0A] border border-[#DFD3C3]/10 flex flex-col">
+                  <span className="text-[#C29B68] text-[9px] font-semibold">LIMITE CNC:</span>
+                  <span className="text-[#C29B68] font-bold">
+                    {isPortaCopos ? 'Máx. 8,5 cm' : 'X: 16 cm | Y: 25 cm'}
+                  </span>
+                </div>
+                <div className="p-1.5 bg-[#140D0A] border border-[#DFD3C3]/10 flex flex-col">
+                  <span className="text-[#C29B68] text-[9px] font-semibold">VETORIZAÇÃO:</span>
+                  <span className={technicalAnalysis.needsVectorization ? 'text-[#E0B16D] font-bold' : 'text-[#C29B68] font-bold'}>
+                    {technicalAnalysis.needsVectorization ? 'Raster Assistido' : '✓ Curvas OK'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Avisos em tempo real integrados à edição */}
+              {technicalAnalysis.warnings.length > 0 && (
+                <div className="p-2 bg-[#2E1412]/80 border border-[#B54A42]/40 text-[#FAF8F5] text-[10px] space-y-1">
+                  {technicalAnalysis.warnings.map((warn, i) => (
+                    <p key={i} className="flex items-start gap-1.5 leading-snug">
+                      <AlertTriangle className="w-3 h-3 text-[#E0B16D] shrink-0 mt-0.5" />
+                      <span className="text-[#DFD3C3]">{warn}</span>
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Toolbar Superior do Editor (Modos e Undo/Redo) */}
             <div className="w-full flex items-center justify-between bg-[#1C140F] p-2 border border-[#DFD3C3]/20 text-xs">
               {/* Botões de Desfazer e Refazer */}
@@ -1061,7 +1166,7 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
                   type="button"
                   onClick={handleUndo}
                   disabled={historyIndex <= 0}
-                  className="p-1.5 hover:bg-white/10 text-white/80 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                  className="p-1.5 hover:bg-[#8A5835]/30 text-[#DFD3C3] hover:text-[#C29B68] disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
                   title="Desfazer alteração (Undo)"
                 >
                   <RotateCcw className="w-4 h-4" />
@@ -1070,20 +1175,28 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
                   type="button"
                   onClick={handleRedo}
                   disabled={historyIndex >= history.length - 1}
-                  className="p-1.5 hover:bg-white/10 text-white/80 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                  className="p-1.5 hover:bg-[#8A5835]/30 text-[#DFD3C3] hover:text-[#C29B68] disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
                   title="Refazer alteração (Redo)"
                 >
                   <RotateCw className="w-4 h-4" />
                 </button>
-                <span className="text-white/20 mx-1">|</span>
+                <span className="text-[#C29B68]/30 mx-1">|</span>
                 <span className="text-[11px] text-[#C29B68] font-mono">
-                  {elements.length} {elements.length === 1 ? 'elemento' : 'elementos'}
+                  {elements.length} {elements.length === 1 ? 'elemento posicionado' : 'elementos posicionados'}
                 </span>
               </div>
 
-              <span className="text-[11px] text-[#C29B68] font-mono">
-                {elements.length} {elements.length === 1 ? 'elemento posicionado' : 'elementos posicionados'}
-              </span>
+              {/* Modo de Visualização */}
+              <div className="flex items-center gap-1 text-[11px]">
+                <span className="text-[#DFD3C3]/70 hidden sm:inline">Modo:</span>
+                <span className="text-[#C29B68] font-mono font-bold uppercase text-[10px]">
+                  {previewMode === 'realista'
+                    ? '3D Realista'
+                    : previewMode === 'monocromatico_cnc'
+                    ? 'Broca CNC'
+                    : 'Área Técnica'}
+                </span>
+              </div>
             </div>
 
             {/* O CANVAS INTERATIVO COMPLETO */}
@@ -1108,20 +1221,47 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
             />
 
             {/* Dica Contextual de Uso do Editor */}
-            <div className="p-2.5 bg-[#1C140F]/80 border border-[#DFD3C3]/15 text-[11px] text-[#DFD3C3]/80 flex items-center justify-between">
+            <div className="p-2.5 bg-[#1C140F]/90 border border-[#DFD3C3]/15 text-[11px] text-[#DFD3C3] flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Info className="w-3.5 h-3.5 text-[#C29B68]" />
-                <span>Clique e arraste para posicionar. Alças de canto redimensionam proporcionalmente.</span>
+                <span className="text-[#DFD3C3]">Clique e arraste para posicionar. Alças de canto redimensionam proporcionalmente respeitando o limite CNC.</span>
               </span>
               {elements.length > 0 && (
                 <button
                   type="button"
                   onClick={() => pushHistory([])}
-                  className="text-red-400 hover:text-red-300 text-[10px] uppercase font-bold underline cursor-pointer"
+                  className="text-[#C29B68] hover:text-[#FAF8F5] text-[10px] uppercase font-bold underline cursor-pointer transition-colors"
                 >
                   Limpar Tudo
                 </button>
               )}
+            </div>
+
+            {/* Acesso Rápido para Inserir Arte/Texto no Mobile Diretamente no Editor Visual */}
+            <div className="block lg:hidden p-3 bg-[#FAF8F5] border border-[#DFD3C3] text-xs space-y-2">
+              <span className="font-bold text-[#8A5835] uppercase text-[11px] block">
+                Adicionar Arte ou Texto à Peça
+              </span>
+              <div className="flex gap-2">
+                <label className="flex-1 py-2 px-3 bg-[#2A1E17] hover:bg-[#8A5835] text-[#FAF8F5] text-[11px] font-bold uppercase tracking-wider text-center cursor-pointer transition-colors flex items-center justify-center gap-1.5">
+                  <Upload className="w-3.5 h-3.5 text-[#C29B68]" />
+                  <span>{isUploading ? 'Processando...' : 'Carregar Imagem / Vetor'}</span>
+                  <input
+                    type="file"
+                    accept=".svg,.png,.jpg,.jpeg,.webp,image/svg+xml,image/png,image/jpeg,image/webp"
+                    onChange={onFileInputChange}
+                    disabled={isUploading}
+                    className="hidden"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setActiveMobileTab('config')}
+                  className="py-2 px-3 bg-[#FAF3EA] border border-[#8A5835] text-[#8A5835] hover:bg-[#8A5835] hover:text-[#FAF8F5] text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  Madeira &amp; Medidas
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1134,59 +1274,36 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
               activeMobileTab === 'summary' ? 'flex' : 'hidden lg:flex'
             }`}
           >
-            {/* Card de Análise de Viabilidade Técnica CNC */}
-            <div className="p-4 sm:p-5 bg-[#FAF8F5] text-[#111111] border border-[#DFD3C3] shadow-md space-y-3">
-              <div className="flex items-center justify-between border-b border-[#DFD3C3]/80 pb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#8A5835] flex items-center gap-1.5">
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>Análise de Viabilidade CNC</span>
-                </span>
-                <span
-                  className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-xs ${
-                    technicalAnalysis.status === 'aprovado_previa'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : technicalAnalysis.status === 'atencao'
-                      ? 'bg-amber-100 text-amber-900'
-                      : 'bg-red-100 text-red-900'
-                  }`}
-                >
-                  {technicalAnalysis.status === 'aprovado_previa'
-                    ? 'Zona Permitida OK'
+            {/* Ficha Resumida de Viabilidade Técnica CNC */}
+            <div className="p-3 bg-[#FAF8F5] text-[#111111] border border-[#DFD3C3] shadow-sm flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-[#8A5835]" />
+                <div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A5835] block">
+                    Viabilidade CNC
+                  </span>
+                  <span className="text-[10px] text-[#5C4033] block">
+                    {technicalAnalysis.status === 'aprovado_previa'
+                      ? 'Área útil e limites validados'
+                      : 'Requer conferência técnica'}
+                  </span>
+                </div>
+              </div>
+              <span
+                className={`text-[9px] font-bold uppercase px-2.5 py-1 border ${
+                  technicalAnalysis.status === 'aprovado_previa'
+                    ? 'bg-[#FAF3EA] text-[#8A5835] border-[#8A5835]/50'
                     : technicalAnalysis.status === 'atencao'
-                    ? 'Exige Análise'
-                    : 'Ajuste Necessário'}
-                </span>
-              </div>
-
-              {/* Mensagens de Alerta ou Recomendações */}
-              {technicalAnalysis.warnings.length > 0 ? (
-                <div className="space-y-1.5">
-                  {technicalAnalysis.warnings.map((warn, i) => (
-                    <div
-                      key={i}
-                      className="p-2 bg-amber-50 border border-amber-200 text-amber-900 text-[11px] leading-relaxed flex items-start gap-1.5"
-                    >
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
-                      <span>{warn}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-2 bg-emerald-50 border border-emerald-200 text-emerald-900 text-[11px] flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Todos os elementos respeitam a canaleta e as margens seguras.</span>
-                </div>
-              )}
-
-              {/* Recomendações Técnicas do Atelier */}
-              <div className="text-[10px] text-[#5C4033] space-y-1 pt-1 border-t border-[#DFD3C3]/60">
-                <p>
-                  • Imagens raster passam por vetorização técnica assistida antes do corte router CNC.
-                </p>
-                <p>
-                  • A prévia visual simula a disposição e tonalidade comercial.
-                </p>
-              </div>
+                    ? 'bg-amber-100 text-amber-900 border-amber-300'
+                    : 'bg-red-100 text-red-900 border-red-300'
+                }`}
+              >
+                {technicalAnalysis.status === 'aprovado_previa'
+                  ? 'Aprovado'
+                  : technicalAnalysis.status === 'atencao'
+                  ? 'Exige Análise'
+                  : 'Ajuste'}
+              </span>
             </div>
 
             {/* Card de Orçamento Dinâmico com Discriminação */}

@@ -1,0 +1,28 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Bloqueio padrão para caminhos não autorizados
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Pasta segura de pedidos do Atelier (/orders/{orderId}/{fileName})
+    match /orders/{orderId}/{fileName} {
+      // Leitura permitida para download via links seguros no WhatsApp pelo atelier e pelo cliente
+      allow read: if true;
+
+      // Criação de novos arquivos restrita a formatos de imagem/vetor seguros e tamanho máximo de 15MB
+      allow create: if request.resource.size < 15 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('image/.*')
+          || request.resource.contentType == 'image/svg+xml'
+        )
+        && fileName.size() <= 128
+        && orderId.size() <= 40;
+
+      // Proibido sobrescrever ou deletar arquivos existentes através do cliente web
+      allow update, delete: if false;
+    }
+  }
+}

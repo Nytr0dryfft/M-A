@@ -34,6 +34,8 @@ interface CatalogSectionProps {
   onOpenCustomStudio?: (pieceType?: 'tabua_carne' | 'porta_copos') => void;
 }
 
+type CatalogFilter = 'all' | 'tabuas' | 'moveis';
+
 export const CatalogSection: React.FC<CatalogSectionProps> = ({
   products,
   onSelectProduct,
@@ -41,10 +43,20 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
   onCustomizeLaser,
   onOpenCustomStudio,
 }) => {
-  const [filter, setFilter] = useState<'all' | 'tabua' | 'movel'>('all');
+  const [filter, setFilter] = useState<CatalogFilter>('all');
   const [isCustomerPhotosOpen, setIsCustomerPhotosOpen] = useState(false);
   const [customerPhotosCategory, setCustomerPhotosCategory] = useState<PhotoCategory | null>(null);
   const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
+
+  // Grupo 1: Tábuas de Carne & Porta-Copos juntos
+  const tabuasEPortaCopos = products.filter(
+    (p) => p.id === 'tabua-churrasco-time' || p.id === 'porta-copos-personalizados'
+  );
+
+  // Grupo 2: Mesas & Banquetas juntas
+  const mesasEBanquetas = products.filter(
+    (p) => p.id === 'mesa-pinus-cozinha-1' || p.id === 'par-de-banquetas-pinus'
+  );
 
   const handleOpenCustomerPhotos = (category: PhotoCategory) => {
     setCustomerPhotosCategory(category);
@@ -69,10 +81,7 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
     }
   };
 
-  const filteredProducts =
-    filter === 'all' ? products : products.filter((p) => p.category === filter);
-
-  // Helper to render icon by name
+  // Helper para renderizar ícone de especificação
   const renderSpecIcon = (name: string) => {
     switch (name) {
       case 'Ruler':
@@ -102,13 +111,10 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
     }
   };
 
-  const tabuas = products.filter((p) => p.category === 'tabua');
-  const moveis = products.filter((p) => p.category === 'movel');
-
   return (
     <section className="py-10 sm:py-20 lg:py-28 2xl:py-36 bg-[#FCF9F3] relative" id="catalogo">
       <div className="max-w-[1560px] mx-auto px-4 sm:px-8 lg:px-14 xl:px-16 2xl:px-20">
-        {/* Section Header */}
+        {/* Cabeçalho da Seção */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6 mb-8 sm:mb-12 lg:mb-16">
           <div>
             <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
@@ -123,13 +129,13 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
           </div>
         </div>
 
-        {/* Interactive Segmented Filter Controls */}
+        {/* Controles de Filtros Segmentados */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6 sm:mb-12">
           <div className="w-full sm:w-auto flex items-center overflow-x-auto no-scrollbar gap-1 sm:gap-1.5 p-1 bg-[#FAF8F5] border border-[#DFD3C3] shadow-sm">
             <button
               type="button"
               onClick={() => setFilter('all')}
-              className={`px-3 sm:px-4 py-2 sm:py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer text-center whitespace-nowrap min-h-[38px] ${
+              className={`px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer text-center whitespace-nowrap min-h-[38px] ${
                 filter === 'all'
                   ? 'bg-[#2A1E17] text-white shadow-sm'
                   : 'text-[#1C1917] hover:text-[#8A5835]'
@@ -139,39 +145,42 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setFilter('tabua')}
-              className={`px-3 sm:px-4 py-2 sm:py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap min-h-[38px] ${
-                filter === 'tabua'
+              onClick={() => setFilter('tabuas')}
+              className={`px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap min-h-[38px] ${
+                filter === 'tabuas'
                   ? 'bg-[#2A1E17] text-white shadow-sm'
                   : 'text-[#1C1917] hover:text-[#8A5835]'
               }`}
             >
               <Utensils className="w-3.5 h-3.5 shrink-0" />
-              <span>Tábuas ({tabuas.length})</span>
+              <span>Tábuas &amp; Porta-Copos ({tabuasEPortaCopos.length})</span>
             </button>
             <button
               type="button"
-              onClick={() => setFilter('movel')}
-              className={`px-3 sm:px-4 py-2 sm:py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap min-h-[38px] ${
-                filter === 'movel'
+              onClick={() => setFilter('moveis')}
+              className={`px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap min-h-[38px] ${
+                filter === 'moveis'
                   ? 'bg-[#2A1E17] text-white shadow-sm'
                   : 'text-[#1C1917] hover:text-[#8A5835]'
               }`}
             >
               <Armchair className="w-3.5 h-3.5 shrink-0" />
-              <span>Pequenos Móveis ({moveis.length})</span>
+              <span>Mesas &amp; Banquetas ({mesasEBanquetas.length})</span>
             </button>
           </div>
         </div>
 
-        {/* SEÇÃO 1: TÁBUAS DE CORTE & BUTCHER BLOCKS */}
-        {(filter === 'all' || filter === 'tabua') && (
-          <div className="mb-14 sm:mb-20 2xl:mb-28" id="tabuas">
+        {/* GRUPO 1: TÁBUAS DE CARNE JUNTO COM PORTA-COPOS */}
+        {(filter === 'all' || filter === 'tabuas') && (
+          <div className="mb-14 sm:mb-20 2xl:mb-28 scroll-mt-24 relative" id="tabuas">
+            <span id="porta-copos" className="absolute -top-24 pointer-events-none" aria-hidden="true" />
+            <span id="tabuas-de-carne-personalizadas" className="absolute -top-24 pointer-events-none" aria-hidden="true" />
+
             <div className="flex items-center justify-between border-b border-[#DFD3C3] pb-3 sm:pb-4 mb-6 sm:mb-8">
               <div className="flex items-center gap-2.5 sm:gap-3">
                 <Utensils className="w-5 h-5 sm:w-6 sm:h-6 text-[#8A5835]" />
                 <h3 className="font-serif text-xl sm:text-2xl 2xl:text-3xl font-bold text-[#111111]">
-                  Coleção Tábuas de Carne &amp; Corte de Precisão
+                  Coleção Tábuas de Carne &amp; Porta-Copos
                 </h3>
               </div>
               <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#B88658] hidden sm:inline">
@@ -180,307 +189,298 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 xl:gap-12 2xl:gap-14 items-stretch">
-              {tabuas.map((product) => (
-                <div
-                  key={product.id}
-                  className="bg-[#FAF8F5] border border-[#DFD3C3]/80 shadow-lg group hover:shadow-2xl transition-all duration-300 flex flex-col justify-between overflow-hidden"
-                >
-                  <div>
-                    {/* Image Box with Parallax Scale */}
-                    <div className="relative overflow-hidden aspect-[16/10] bg-[#2A1E17]">
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out will-change-transform"
-                        referrerPolicy="no-referrer"
-                      />
+              {tabuasEPortaCopos.map((product) => {
+                const isTabuaCarne = product.id === 'tabua-churrasco-time';
 
-                      {product.badge && (
-                        <span className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-[#111111]/90 backdrop-blur-md text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 sm:px-3 sm:py-1.5">
-                          {product.badge}
-                        </span>
-                      )}
-                      {product.highlightTag && (
-                        <span className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-[#C29B68] text-[#111111] text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 sm:px-3 sm:py-1 shadow">
-                          {product.highlightTag}
-                        </span>
-                      )}
+                return (
+                  <div
+                    key={product.id}
+                    className="bg-[#FAF8F5] border border-[#DFD3C3]/80 shadow-lg group hover:shadow-2xl transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                  >
+                    <div>
+                      {/* Caixa de Imagem */}
+                      <div className="relative overflow-hidden aspect-[16/10] bg-[#2A1E17]">
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out will-change-transform cursor-pointer"
+                          onClick={() => setPreviewImage({ url: product.imageUrl, title: product.name })}
+                          referrerPolicy="no-referrer"
+                        />
+
+                        {product.badge && (
+                          <span className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20 bg-[#111111]/90 backdrop-blur-md text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 sm:px-3 sm:py-1.5">
+                            {product.badge}
+                          </span>
+                        )}
+                        {product.highlightTag && (
+                          <span className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 bg-[#C29B68] text-[#111111] text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 sm:px-3 sm:py-1 shadow">
+                            {product.highlightTag}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Conteúdo Informativo */}
+                      <div className="p-4 sm:p-9 xl:p-10">
+                        <div className="flex items-center justify-between gap-3 text-[11px] sm:text-xs text-[#8A5835] font-bold uppercase tracking-wider mb-2 flex-nowrap">
+                          <span className="truncate min-w-0">Madeiras: {product.woods}</span>
+                          <span className="text-[#1C1917] font-serif text-base sm:text-xl xl:text-2xl font-bold tabular-nums whitespace-nowrap shrink-0">
+                            {product.priceRange ||
+                              (product.priceMin && product.priceMax
+                                ? `R$ ${product.priceMin.toFixed(2).replace('.', ',')} - R$ ${product.priceMax.toFixed(2).replace('.', ',')}`
+                                : `R$ ${product.price.toFixed(2).replace('.', ',')}`)}
+                          </span>
+                        </div>
+
+                        <h4 className="font-serif text-xl sm:text-2xl xl:text-3xl font-bold text-[#111111] mb-2 sm:mb-3">
+                          {product.name}
+                        </h4>
+
+                        <p className="text-xs sm:text-sm text-[#5C4033] leading-relaxed mb-4 sm:mb-6">
+                          {product.description}
+                        </p>
+
+                        {/* Barra informativa horizontal no mobile (sem números de 1 a 4) */}
+                        <div className="block sm:hidden mb-4 -mx-4 w-[calc(100%+2rem)]">
+                          <InfiniteSpecsMarquee items={product.specs} />
+                        </div>
+
+                        {/* Grade alinhada no desktop */}
+                        <ul className="hidden sm:grid sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3 text-xs text-[#3E2D22] mb-4 sm:mb-6 py-2.5 sm:py-4 border-y border-[#DFD3C3]/60">
+                          {product.specs.map((spec, i) => (
+                            <li key={i} className="flex items-center gap-1.5 sm:gap-2">
+                              {renderSpecIcon(spec.icon)}
+                              <span className="truncate text-[11px] sm:text-xs">{spec.value}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
 
-                    {/* Content Box */}
-                    <div className="p-4 sm:p-9 xl:p-10">
-                      <div className="flex items-center justify-between gap-3 text-[11px] sm:text-xs text-[#8A5835] font-bold uppercase tracking-wider mb-2 flex-nowrap">
-                        <span className="truncate min-w-0">Madeiras: {product.woods}</span>
-                        <span className="text-[#1C1917] font-serif text-base sm:text-xl xl:text-2xl font-bold tabular-nums whitespace-nowrap shrink-0">
-                          {product.priceRange || (product.priceMin && product.priceMax
-                            ? `R$ ${product.priceMin.toFixed(2).replace('.', ',')} - R$ ${product.priceMax.toFixed(2).replace('.', ',')}`
-                            : `R$ ${product.price.toFixed(2).replace('.', ',')}`)}
-                        </span>
-                      </div>
+                    {/* Botões de Ação */}
+                    <div className="p-4 sm:p-9 xl:p-10 pt-0">
+                      {isTabuaCarne ? (
+                        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3.5">
+                          <button
+                            onClick={() => handleGoToCustomizer('tabua_carne')}
+                            className="py-2.5 sm:py-4 px-2 sm:px-6 sm:flex-1 bg-[#2A1E17] hover:bg-[#8A5835] text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest text-center transition-colors shadow-md flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-[#C29B68] shrink-0" />
+                            <span className="truncate">Personalizar Tábua</span>
+                          </button>
 
-                      <h4 className="font-serif text-xl sm:text-2xl xl:text-3xl font-bold text-[#111111] mb-2 sm:mb-3">
-                        {product.name}
-                      </h4>
+                          <button
+                            onClick={() => handleOpenCustomerPhotos('tabua')}
+                            className="py-2.5 sm:py-4 px-2 sm:px-6 sm:flex-1 border-2 border-[#2A1E17] hover:border-[#8A5835] hover:bg-[#FAF8F5] text-[#111111] hover:text-[#8A5835] text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer bg-white shadow-sm"
+                            title="Ver fotos de tábuas de corte entregues aos clientes"
+                          >
+                            <Camera className="w-3.5 h-3.5 text-[#8A5835] shrink-0" />
+                            <span className="truncate">Fotos de Clientes</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3.5">
+                          <button
+                            onClick={() => handleGoToCustomizer('porta_copos')}
+                            className="py-2.5 sm:py-4 px-2 sm:px-6 sm:flex-1 bg-[#2A1E17] hover:bg-[#8A5835] text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest text-center transition-colors shadow-md flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-[#C29B68] shrink-0" />
+                            <span className="truncate">Personalizar Porta-Copos</span>
+                          </button>
 
-                      <p className="text-xs sm:text-sm text-[#5C4033] leading-relaxed mb-4 sm:mb-6">
-                        {product.description}
-                      </p>
-
-                      {/* Letreiro contínuo infinito no mobile (sem corte de textos) */}
-                      <div className="block sm:hidden mb-4 -mx-4 w-[calc(100%+2rem)]">
-                        <InfiniteSpecsMarquee items={product.specs} />
-                      </div>
-
-                      {/* Grade tradicional e alinhada para desktop */}
-                      <ul className="hidden sm:grid sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3 text-xs text-[#3E2D22] mb-4 sm:mb-6 py-2.5 sm:py-4 border-y border-[#DFD3C3]/60">
-                        {product.specs.map((spec, i) => (
-                          <li key={i} className="flex items-center gap-1.5 sm:gap-2">
-                            {renderSpecIcon(spec.icon)}
-                            <span className="truncate text-[11px] sm:text-xs">{spec.value}</span>
-                          </li>
-                        ))}
-                      </ul>
+                          <button
+                            onClick={() => handleOpenCustomerPhotos('porta-copos')}
+                            className="py-2.5 sm:py-4 px-2 sm:px-6 sm:flex-1 border-2 border-[#2A1E17] hover:border-[#8A5835] hover:bg-[#FAF8F5] text-[#111111] hover:text-[#8A5835] text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer bg-white shadow-sm"
+                            title="Ver fotos de porta-copos entregues aos clientes"
+                          >
+                            <Camera className="w-3.5 h-3.5 text-[#8A5835] shrink-0" />
+                            <span className="truncate">Fotos de Clientes</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
-                  {/* Actions */}
-                  <div className="p-4 sm:p-9 xl:p-10 pt-0">
-                    {product.id === 'tabua-churrasco-time' ? (
-                      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3.5">
-                        <button
-                          onClick={() => handleGoToCustomizer('tabua_carne')}
-                          className="py-2.5 sm:py-4 px-2 sm:px-6 sm:flex-1 bg-[#2A1E17] hover:bg-[#8A5835] text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest text-center transition-colors shadow-md flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
-                        >
-                          <Sparkles className="w-3.5 h-3.5 text-[#C29B68] shrink-0" />
-                          <span className="truncate">Personalizar Tábua</span>
-                        </button>
+        {/* GRUPO 2: MESAS JUNTO COM BANQUETAS */}
+        {(filter === 'all' || filter === 'moveis') && (
+          <div className="pt-2 sm:pt-6 scroll-mt-24 relative" id="moveis">
+            <span id="mesas-e-cadeiras" className="absolute -top-24 pointer-events-none" aria-hidden="true" />
+            <span id="banquetas" className="absolute -top-24 pointer-events-none" aria-hidden="true" />
 
-                        <button
-                          onClick={() => handleOpenCustomerPhotos('tabua')}
-                          className="py-2.5 sm:py-4 px-2 sm:px-6 sm:flex-1 border-2 border-[#2A1E17] hover:border-[#8A5835] hover:bg-[#FAF8F5] text-[#111111] hover:text-[#8A5835] text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer bg-white shadow-sm"
-                          title="Ver fotos de tábuas de corte entregues aos clientes"
-                        >
-                          <Camera className="w-3.5 h-3.5 text-[#8A5835] shrink-0" />
-                          <span className="truncate">Fotos de Clientes</span>
-                        </button>
+            <div className="flex items-center justify-between border-b border-[#DFD3C3] pb-3 sm:pb-4 mb-6 sm:mb-8">
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <Armchair className="w-5 h-5 sm:w-6 sm:h-6 text-[#8A5835]" />
+                <h3 className="font-serif text-xl sm:text-2xl 2xl:text-3xl font-bold text-[#111111]">
+                  Coleção Mesas &amp; Banquetas em Madeira Maciça
+                </h3>
+              </div>
+              <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#B88658] hidden sm:inline">
+                Mesas de Jantar, Cozinha &amp; Banquetas Artesanais
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 xl:gap-12 2xl:gap-14 items-stretch">
+              {mesasEBanquetas.map((product) => {
+                const isContain = product.imageFit === 'contain';
+
+                return (
+                  <div
+                    key={product.id}
+                    className="bg-[#FAF8F5] border border-[#DFD3C3]/80 shadow-lg group hover:shadow-2xl transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                  >
+                    <div>
+                      {/* Caixa de Imagem com enquadramento adaptativo para banquetas e mesas */}
+                      <div
+                        className={`relative overflow-hidden ${
+                          isContain
+                            ? 'aspect-[4/3] sm:aspect-[16/11] bg-[#18110D]'
+                            : 'aspect-[4/3] sm:aspect-[16/11] bg-[#1A1410]'
+                        }`}
+                      >
+                        {isContain ? (
+                          <div
+                            className="relative w-full h-full flex items-center justify-center overflow-hidden cursor-pointer"
+                            onClick={() => setPreviewImage({ url: product.imageUrl, title: product.name })}
+                            title="Clique para ver a foto completa por inteiro"
+                          >
+                            <img
+                              src={product.imageUrl}
+                              alt=""
+                              aria-hidden="true"
+                              className="absolute inset-0 w-full h-full object-cover blur-xl scale-125 opacity-35 brightness-75 pointer-events-none select-none"
+                            />
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              className="relative z-10 max-h-full max-w-full object-contain p-2 sm:p-3.5 group-hover:scale-102 transition-transform duration-500 ease-out will-change-transform drop-shadow-md"
+                              referrerPolicy="no-referrer"
+                            />
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewImage({ url: product.imageUrl, title: product.name });
+                              }}
+                              className="absolute bottom-3 right-3 z-20 bg-black/75 hover:bg-black text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 flex items-center gap-1.5 backdrop-blur-xs transition-colors border border-white/10"
+                              title="Ver foto inteira sem cortes"
+                            >
+                              <ZoomIn className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#C29B68]" />
+                              <span>Ver foto inteira</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <div
+                            className="relative w-full h-full cursor-pointer"
+                            onClick={() => setPreviewImage({ url: product.imageUrl, title: product.name })}
+                            title="Clique para ampliar a foto"
+                          >
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out will-change-transform"
+                              referrerPolicy="no-referrer"
+                            />
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewImage({ url: product.imageUrl, title: product.name });
+                              }}
+                              className="absolute bottom-3 right-3 z-20 bg-black/75 hover:bg-black text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 flex items-center gap-1.5 backdrop-blur-xs transition-colors border border-white/10"
+                              title="Ampliar foto"
+                            >
+                              <ZoomIn className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#C29B68]" />
+                              <span>Ampliar</span>
+                            </button>
+                          </div>
+                        )}
+
+                        {product.badge && (
+                          <span className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20 bg-[#111111]/90 backdrop-blur-md text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 sm:px-3 sm:py-1.5">
+                            {product.badge}
+                          </span>
+                        )}
+                        {product.highlightTag && (
+                          <span className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 bg-[#DFD3C3] text-[#111111] text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 sm:px-3 sm:py-1 shadow">
+                            {product.highlightTag}
+                          </span>
+                        )}
                       </div>
-                    ) : product.id === 'porta-copos-personalizados' ? (
-                      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3.5">
-                        <button
-                          onClick={() => handleGoToCustomizer('porta_copos')}
-                          className="py-2.5 sm:py-4 px-2 sm:px-6 sm:flex-1 bg-[#2A1E17] hover:bg-[#8A5835] text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest text-center transition-colors shadow-md flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
-                        >
-                          <Sparkles className="w-3.5 h-3.5 text-[#C29B68] shrink-0" />
-                          <span className="truncate">Personalizar Porta-Copos</span>
-                        </button>
 
-                        <button
-                          onClick={() => handleOpenCustomerPhotos('porta-copos')}
-                          className="py-2.5 sm:py-4 px-2 sm:px-6 sm:flex-1 border-2 border-[#2A1E17] hover:border-[#8A5835] hover:bg-[#FAF8F5] text-[#111111] hover:text-[#8A5835] text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer bg-white shadow-sm"
-                          title="Ver fotos de porta-copos entregues aos clientes"
-                        >
-                          <Camera className="w-3.5 h-3.5 text-[#8A5835] shrink-0" />
-                          <span className="truncate">Fotos de Clientes</span>
-                        </button>
+                      {/* Conteúdo Informativo */}
+                      <div className="p-4 sm:p-9 xl:p-10">
+                        <div className="flex items-center justify-between gap-3 text-[11px] sm:text-xs text-[#8A5835] font-bold uppercase tracking-wider mb-2 flex-nowrap">
+                          <span className="truncate min-w-0">Madeira: {product.woods}</span>
+                          <span className="text-[#1C1917] font-serif text-base sm:text-xl xl:text-2xl font-bold tabular-nums whitespace-nowrap shrink-0">
+                            {product.priceRange ||
+                              (product.priceMin && product.priceMax
+                                ? `R$ ${product.priceMin.toFixed(2).replace('.', ',')} - R$ ${product.priceMax.toFixed(2).replace('.', ',')}`
+                                : `R$ ${product.price.toFixed(2).replace('.', ',')}`)}
+                          </span>
+                        </div>
+
+                        <h4 className="font-serif text-xl sm:text-2xl xl:text-3xl font-bold text-[#111111] mb-2 sm:mb-3">
+                          {product.name}
+                        </h4>
+
+                        <p className="text-xs sm:text-sm text-[#5C4033] leading-relaxed mb-4 sm:mb-6">
+                          {product.description}
+                        </p>
+
+                        {/* Barra informativa horizontal no mobile (sem números de 1 a 4) */}
+                        <div className="block sm:hidden mb-4 -mx-4 w-[calc(100%+2rem)]">
+                          <InfiniteSpecsMarquee items={product.specs} />
+                        </div>
+
+                        {/* Grade alinhada no desktop */}
+                        <ul className="hidden sm:grid sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3 text-xs text-[#3E2D22] mb-4 sm:mb-6 py-2.5 sm:py-4 border-y border-[#DFD3C3]/60">
+                          {product.specs.map((spec, i) => (
+                            <li key={i} className="flex items-center gap-1.5 sm:gap-2">
+                              {renderSpecIcon(spec.icon)}
+                              <span className="truncate text-[11px] sm:text-xs">{spec.value}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                    ) : (
+                    </div>
+
+                    {/* Botões de Ação */}
+                    <div className="p-4 sm:p-9 xl:p-10 pt-0">
                       <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3.5">
                         <button
                           onClick={() => onAddToCart(product)}
                           className="col-span-2 sm:flex-1 py-2.5 sm:py-4 bg-[#2A1E17] hover:bg-[#8A5835] text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest text-center transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer"
                         >
                           <ShoppingBag className="w-3.5 h-3.5" />
-                          <span>Adicionar ao Pedido</span>
+                          <span>Encomendar Peça</span>
                         </button>
 
                         <button
-                          onClick={() => onCustomizeLaser(product)}
-                          className="col-span-1 py-2.5 sm:py-4 px-2 sm:px-5 border border-[#DFD3C3] hover:border-[#8A5835] text-[#111111] hover:text-[#8A5835] text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer bg-white"
-                          title="Simular personalização feita por CNC (brasão ou nome)"
+                          onClick={() => handleOpenCustomerPhotos('moveis')}
+                          className="col-span-1 py-2.5 sm:py-4 px-2 sm:px-4 border-2 border-[#2A1E17] hover:border-[#8A5835] hover:bg-[#FAF8F5] text-[#111111] hover:text-[#8A5835] text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer bg-white"
+                          title="Ver fotos reais de clientes de móveis entregues"
                         >
-                          <PenTool className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
-                          <span className="truncate">Personalização CNC</span>
+                          <Camera className="w-3.5 h-3.5 text-[#8A5835] shrink-0" />
+                          <span className="truncate">Fotos de clientes</span>
                         </button>
 
                         <button
                           onClick={() => onSelectProduct(product)}
-                          className="col-span-1 py-2.5 sm:p-4 border border-[#DFD3C3] hover:border-[#2A1E17] text-[#1C1917] transition-colors cursor-pointer bg-white flex items-center justify-center gap-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider"
-                          title="Ver detalhes técnicos da obra"
+                          className="col-span-1 py-2.5 sm:py-4 px-2 sm:px-4 border border-[#DFD3C3] hover:border-[#8A5835] text-[#111111] hover:text-[#8A5835] text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer bg-white"
                         >
-                          <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                          <span className="sm:hidden">Detalhes</span>
+                          <SlidersHorizontal className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                          <span className="truncate">Dimensões</span>
                         </button>
                       </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* SEÇÃO 2: PEQUENOS MÓVEIS ESCULTURAIS */}
-        {(filter === 'all' || filter === 'movel') && (
-          <div id="moveis" className="pt-2 sm:pt-6">
-            <div className="flex items-center justify-between border-b border-[#DFD3C3] pb-3 sm:pb-4 mb-6 sm:mb-8">
-              <div className="flex items-center gap-2.5 sm:gap-3">
-                <Armchair className="w-5 h-5 sm:w-6 sm:h-6 text-[#8A5835]" />
-                <h3 className="font-serif text-xl sm:text-2xl 2xl:text-3xl font-bold text-[#111111]">
-                  Coleção Móveis em Madeira Maciça
-                </h3>
-              </div>
-              <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#B88658] hidden sm:inline">
-                Mesas &amp; Mobiliário em Madeira Maciça
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 xl:gap-12 2xl:gap-14 items-stretch">
-              {moveis.map((product) => (
-                <div
-                  key={product.id}
-                  className="bg-[#FAF8F5] border border-[#DFD3C3]/80 shadow-lg group hover:shadow-2xl transition-all duration-300 flex flex-col justify-between overflow-hidden"
-                >
-                  <div>
-                    {/* Image Box with Adaptive Framing (sem corte para banquetas) */}
-                    <div className="relative overflow-hidden aspect-[4/3] sm:aspect-[16/11] bg-[#1A1410]">
-                      {product.imageFit === 'contain' ? (
-                        <div
-                          className="relative w-full h-full flex items-center justify-center overflow-hidden cursor-pointer bg-[#18110D]"
-                          onClick={() => setPreviewImage({ url: product.imageUrl, title: product.name })}
-                          title="Clique para ver a foto completa por inteiro"
-                        >
-                          {/* Fundo suave desfocado para compor o enquadramento sem cortes e sem barras pretas secas */}
-                          <img
-                            src={product.imageUrl}
-                            alt=""
-                            aria-hidden="true"
-                            className="absolute inset-0 w-full h-full object-cover blur-xl scale-125 opacity-35 brightness-75 pointer-events-none select-none"
-                          />
-                          <img
-                            src={product.imageUrl}
-                            alt={product.name}
-                            className="relative z-10 max-h-full max-w-full object-contain p-2 sm:p-3.5 group-hover:scale-102 transition-transform duration-500 ease-out will-change-transform drop-shadow-md"
-                            referrerPolicy="no-referrer"
-                          />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPreviewImage({ url: product.imageUrl, title: product.name });
-                            }}
-                            className="absolute bottom-3 right-3 z-20 bg-black/75 hover:bg-black text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 flex items-center gap-1.5 backdrop-blur-xs transition-colors border border-white/10"
-                            title="Ver foto inteira sem cortes"
-                          >
-                            <ZoomIn className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#C29B68]" />
-                            <span>Ver foto inteira</span>
-                          </button>
-                        </div>
-                      ) : (
-                        <div
-                          className="relative w-full h-full cursor-pointer"
-                          onClick={() => setPreviewImage({ url: product.imageUrl, title: product.name })}
-                          title="Clique para ampliar a foto"
-                        >
-                          <img
-                            src={product.imageUrl}
-                            alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out will-change-transform"
-                            referrerPolicy="no-referrer"
-                          />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPreviewImage({ url: product.imageUrl, title: product.name });
-                            }}
-                            className="absolute bottom-3 right-3 z-20 bg-black/75 hover:bg-black text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 flex items-center gap-1.5 backdrop-blur-xs transition-colors border border-white/10"
-                            title="Ampliar foto"
-                          >
-                            <ZoomIn className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#C29B68]" />
-                            <span>Ampliar</span>
-                          </button>
-                        </div>
-                      )}
-
-                      {product.badge && (
-                        <span className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20 bg-[#111111]/90 backdrop-blur-md text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 sm:px-3 sm:py-1.5">
-                          {product.badge}
-                        </span>
-                      )}
-                      {product.highlightTag && (
-                        <span className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 bg-[#DFD3C3] text-[#111111] text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 sm:px-3 sm:py-1 shadow">
-                          {product.highlightTag}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Content Box */}
-                    <div className="p-4 sm:p-9 xl:p-10">
-                      <div className="flex items-center justify-between gap-3 text-[11px] sm:text-xs text-[#8A5835] font-bold uppercase tracking-wider mb-2 flex-nowrap">
-                        <span className="truncate min-w-0">Madeira: {product.woods}</span>
-                        <span className="text-[#1C1917] font-serif text-base sm:text-xl xl:text-2xl font-bold tabular-nums whitespace-nowrap shrink-0">
-                          {product.priceRange || (product.priceMin && product.priceMax
-                            ? `R$ ${product.priceMin.toFixed(2).replace('.', ',')} - R$ ${product.priceMax.toFixed(2).replace('.', ',')}`
-                            : `R$ ${product.price.toFixed(2).replace('.', ',')}`)}
-                        </span>
-                      </div>
-
-                      <h4 className="font-serif text-xl sm:text-2xl xl:text-3xl font-bold text-[#111111] mb-2 sm:mb-3">
-                        {product.name}
-                      </h4>
-
-                      <p className="text-xs sm:text-sm text-[#5C4033] leading-relaxed mb-4 sm:mb-6">
-                        {product.description}
-                      </p>
-
-                      {/* Letreiro contínuo infinito no mobile (sem corte de textos) */}
-                      <div className="block sm:hidden mb-4 -mx-4 w-[calc(100%+2rem)]">
-                        <InfiniteSpecsMarquee items={product.specs} />
-                      </div>
-
-                      {/* Grade tradicional e alinhada para desktop */}
-                      <ul className="hidden sm:grid sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3 text-xs text-[#3E2D22] mb-4 sm:mb-6 py-2.5 sm:py-4 border-y border-[#DFD3C3]/60">
-                        {product.specs.map((spec, i) => (
-                          <li key={i} className="flex items-center gap-1.5 sm:gap-2">
-                            {renderSpecIcon(spec.icon)}
-                            <span className="truncate text-[11px] sm:text-xs">{spec.value}</span>
-                          </li>
-                        ))}
-                      </ul>
                     </div>
                   </div>
-
-                  {/* Actions */}
-                  <div className="p-4 sm:p-9 xl:p-10 pt-0">
-                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3.5">
-                      <button
-                        onClick={() => onAddToCart(product)}
-                        className="col-span-2 sm:flex-1 py-2.5 sm:py-4 bg-[#2A1E17] hover:bg-[#8A5835] text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest text-center transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <ShoppingBag className="w-3.5 h-3.5" />
-                        <span>Encomendar Peça</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleOpenCustomerPhotos('moveis')}
-                        className="col-span-1 py-2.5 sm:py-4 px-2 sm:px-4 border-2 border-[#2A1E17] hover:border-[#8A5835] hover:bg-[#FAF8F5] text-[#111111] hover:text-[#8A5835] text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer bg-white"
-                        title="Ver fotos reais de móveis entregues aos clientes"
-                      >
-                        <Camera className="w-3.5 h-3.5 text-[#8A5835] shrink-0" />
-                        <span className="truncate">Fotos Reais</span>
-                      </button>
-
-                      <button
-                        onClick={() => onSelectProduct(product)}
-                        className="col-span-1 py-2.5 sm:py-4 px-2 sm:px-4 border border-[#DFD3C3] hover:border-[#8A5835] text-[#111111] hover:text-[#8A5835] text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer bg-white"
-                      >
-                        <SlidersHorizontal className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
-                        <span className="truncate">Dimensões</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -500,17 +500,18 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
           onClick={() => setPreviewImage(null)}
         >
           <div
-            className="relative max-w-4xl max-h-[92vh] w-full flex flex-col items-center justify-center bg-[#18110D] border border-[#DFD3C3]/30 p-3 sm:p-5 shadow-2xl"
+            className="relative max-w-5xl max-h-[90vh] bg-[#140D0A] border border-[#DFD3C3]/30 p-2 sm:p-4 flex flex-col items-center shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-full flex items-center justify-between pb-3 px-1 border-b border-white/10 text-white">
-              <span className="font-serif text-sm sm:text-base font-bold text-[#E6DAC8] truncate pr-4">
-                {previewImage.title} — Visualização Completa
+            <div className="w-full flex items-center justify-between pb-2 mb-2 border-b border-[#DFD3C3]/20">
+              <span className="text-xs sm:text-sm font-semibold text-[#DFD3C3] truncate">
+                {previewImage.title}
               </span>
               <button
+                type="button"
                 onClick={() => setPreviewImage(null)}
-                className="p-1.5 bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/20 cursor-pointer"
-                aria-label="Fechar foto"
+                className="p-1.5 text-[#DFD3C3] hover:text-white hover:bg-white/10 transition-colors"
+                aria-label="Fechar visualização"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -519,12 +520,12 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
               <img
                 src={previewImage.url}
                 alt={previewImage.title}
-                className="max-h-[76vh] max-w-full object-contain drop-shadow-2xl"
+                className="max-h-[75vh] max-w-full object-contain shadow-2xl rounded-xs"
               />
             </div>
-            <div className="w-full text-center pt-2 text-[11px] text-[#C29B68] font-mono">
-              Foto 100% completa sem nenhum corte
-            </div>
+            <span className="text-[10px] sm:text-xs text-[#DFD3C3]/60 pt-2 text-center">
+              Fotografia real de fabricação e acabamento em madeira maciça no Atelier M&amp;A
+            </span>
           </div>
         </div>
       )}

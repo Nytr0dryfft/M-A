@@ -76,9 +76,9 @@ export const CuttingBoardPreview: React.FC<CuttingBoardPreviewProps> = ({
   const grooveWidthCm = 1.0;
   const grooveWidthPx = Math.max(6, Math.min(10, Math.round(grooveWidthCm * pxPerCm)));
 
-  // 3. Corner radius for outer board and groove
-  const outerCornerRadiusPx = Math.max(8, Math.round(1.5 * pxPerCm)); // ~1.5cm radius
-  const grooveCornerRadiusPx = Math.max(6, Math.round(outerCornerRadiusPx * 0.75));
+  // 3. Corner radius for outer board and groove: cantos retos de 90 graus (geometria quadrada pura)
+  const outerCornerRadiusPx = 0;
+  const grooveCornerRadiusPx = 0;
 
   // 4. Safe working area inside juice groove
   const safeMarginPx = grooveMarginPx + grooveWidthPx + 6;
@@ -86,8 +86,8 @@ export const CuttingBoardPreview: React.FC<CuttingBoardPreviewProps> = ({
   const innerHeightPx = boardPixelHeight - 2 * safeMarginPx;
 
   // 5. Shield size calculation in pixels:
-  // REGRA ESTRITA: O brasão NUNCA pode ultrapassar 17 cm de diâmetro ou maior dimensão
-  const MAX_SHIELD_SIZE_CM = 17;
+  // REGRA ESTRITA: O brasão NUNCA pode ultrapassar 16 cm de diâmetro ou maior dimensão
+  const MAX_SHIELD_SIZE_CM = 16;
   const maxAvailableSpaceCm = isPortaCopos
     ? Math.min(lengthCm - 1.5, widthCm - 1.5)
     : Math.min(
@@ -484,10 +484,10 @@ export const CuttingBoardPreview: React.FC<CuttingBoardPreviewProps> = ({
                   max={
                     isPortaCopos
                       ? Math.max(5, Math.floor(maxShieldScaleCm))
-                      : Math.min(17, Math.max(10, Math.floor(maxShieldScaleCm)))
+                      : Math.min(16, Math.max(10, Math.floor(maxShieldScaleCm)))
                   }
                   value={clampedScaleCm}
-                  onChange={(e) => onScaleChange(Math.min(17, Number(e.target.value)))}
+                  onChange={(e) => onScaleChange(Math.min(16, Number(e.target.value)))}
                   className="w-20 sm:w-24 accent-[#C29B68] cursor-pointer"
                 />
                 <span className="text-[11px] font-mono text-white tabular-nums w-12 text-right">

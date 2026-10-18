@@ -14,7 +14,7 @@ export const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
 
   return (
     <aside
-      aria-label="Chamar no Zap"
+      aria-label="WhatsApp"
       className={`fixed right-4 sm:right-6 z-40 print:hidden ${className}`}
       style={{
         bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))',
@@ -24,16 +24,11 @@ export const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
         href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Chamar no Zap (+55 24 99961-9770)"
-        title="Chamar no Zap (+55 24 99961-9770)"
-        className="flex items-center gap-2.5 group cursor-pointer focus:outline-none select-none"
+        aria-label="WhatsApp (+55 24 99961-9770)"
+        title="WhatsApp (+55 24 99961-9770)"
+        className="flex items-center group cursor-pointer focus:outline-none select-none"
       >
-        {/* Etiqueta elegante com texto 'Chamar no Zap' */}
-        <span className="hidden sm:inline-flex items-center px-3.5 py-1.5 rounded-full bg-[#2A1E17]/95 border border-[#C29B68]/80 text-[#FAF8F5] text-xs font-bold uppercase tracking-wider shadow-lg group-hover:bg-[#8A5835] group-hover:border-[#DFD3C3] transition-all duration-300">
-          Chamar no Zap
-        </span>
-
-        {/* Botão circular estilizado em tons nobres de marrom atelier */}
+        {/* Botão circular com o símbolo do WhatsApp */}
         <div className="relative w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-[#5C3A21] hover:bg-[#432814] active:bg-[#321D0E] text-[#FAF8F5] flex items-center justify-center border-2 border-[#C29B68] shadow-xl shadow-black/40 hover:shadow-2xl transition-all duration-300 group-hover:scale-106 focus:ring-4 focus:ring-[#8A5835]/50">
           {/* Pulso sutil no botão em tom marrom quente */}
           <span

@@ -178,10 +178,10 @@ export const VectorizeModal: React.FC<VectorizeModalProps> = ({
             </div>
             <div>
               <h2 className="font-serif text-sm sm:text-base font-bold text-[#E6DAC8] tracking-wide">
-                Preparação & Vetorização CNC de Imagem
+                Preparação &amp; Vetorização CNC de Imagem
               </h2>
-              <p className="text-[11px] text-white/60 truncate max-w-[280px] sm:max-w-md">
-                Arquivo: <span className="text-white font-mono">{uploadResult.fileName}</span> (
+              <p className="text-[11px] text-[#DFD3C3] truncate max-w-[280px] sm:max-w-md">
+                Arquivo: <span className="text-[#FAF8F5] font-mono">{uploadResult.fileName}</span> (
                 {uploadResult.width}×{uploadResult.height}px · {(uploadResult.fileSize / 1024).toFixed(0)} KB)
               </p>
             </div>
@@ -189,7 +189,7 @@ export const VectorizeModal: React.FC<VectorizeModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="p-1.5 text-[#DFD3C3] hover:text-[#FAF8F5] hover:bg-white/10 transition-colors cursor-pointer"
             title="Fechar e cancelar"
           >
             <X className="w-5 h-5" />
@@ -234,7 +234,7 @@ export const VectorizeModal: React.FC<VectorizeModalProps> = ({
                   onChange={(e) => handleThresholdChange(Number(e.target.value))}
                   className="w-full accent-[#C29B68] cursor-pointer"
                 />
-                <div className="flex justify-between text-[10px] text-white/40">
+                <div className="flex justify-between text-[10px] text-[#DFD3C3]/60">
                   <span>Mais Fino / Menos Traços</span>
                   <span>Mais Cheio / Mais Traços</span>
                 </div>
@@ -257,7 +257,7 @@ export const VectorizeModal: React.FC<VectorizeModalProps> = ({
                   onChange={(e) => handleSmoothingChange(Number(e.target.value))}
                   className="w-full accent-[#C29B68] cursor-pointer"
                 />
-                <p className="text-[10px] text-white/50 leading-tight">
+                <p className="text-[10px] text-[#DFD3C3]/70 leading-tight">
                   Remove degraus de pixel e gera curvas limpas para a ponta da fresa CNC.
                 </p>
               </div>
@@ -275,7 +275,7 @@ export const VectorizeModal: React.FC<VectorizeModalProps> = ({
                     <span className="text-xs font-semibold text-[#E6DAC8]">
                       Inverter Cores (Preto ↔ Branco)
                     </span>
-                    <span className="text-[10px] text-white/50">
+                    <span className="text-[10px] text-[#DFD3C3]/70">
                       Útil para logotipos claros sobre fundo escuro
                     </span>
                   </div>
@@ -289,27 +289,27 @@ export const VectorizeModal: React.FC<VectorizeModalProps> = ({
                     <span className="font-mono text-[10px] uppercase text-[#C29B68] font-bold">
                       Métricas da Geometria CNC
                     </span>
-                    <span className="font-mono text-[11px] text-white/80">
+                    <span className="font-mono text-[11px] text-[#FAF8F5]">
                       {vectorResult.pathCount} caminhos · {vectorResult.pointCount} nós
                     </span>
                   </div>
 
                   {vectorResult.isComplexPhoto ? (
-                    <div className="flex items-start gap-2 text-[11px] text-amber-300">
-                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+                    <div className="flex items-start gap-2 text-[11px] text-[#E0B16D]">
+                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-[#E0B16D]" />
                       <div>
-                        <strong className="block font-semibold">Fotografia / Arte Complexa</strong>
-                        <p className="text-white/70 text-[10px] leading-relaxed">
+                        <strong className="block font-semibold text-[#FAF3EA]">Fotografia / Arte Complexa</strong>
+                        <p className="text-[#DFD3C3] text-[10px] leading-relaxed">
                           A imagem possui muitos gradientes e caminhos finos. Você pode usar o vetor automático ou solicitar que a equipe do Atelier faça a vetorização manual especializada da sua foto para garantir um entalhe impecável.
                         </p>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-start gap-2 text-[11px] text-emerald-300">
-                      <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
+                    <div className="flex items-start gap-2 text-[11px] text-[#C29B68]">
+                      <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-[#C29B68]" />
                       <div>
-                        <strong className="block font-semibold">Geometria CNC Excelente</strong>
-                        <p className="text-white/70 text-[10px] leading-relaxed">
+                        <strong className="block font-semibold text-[#FAF3EA]">Geometria CNC Excelente</strong>
+                        <p className="text-[#DFD3C3] text-[10px] leading-relaxed">
                           Caminhos fechados de alto contraste, ideais para usinagem em madeira maciça ou preenchimento com resina.
                         </p>
                       </div>
@@ -319,7 +319,7 @@ export const VectorizeModal: React.FC<VectorizeModalProps> = ({
               )}
             </div>
 
-            <div className="text-[10px] text-white/40 italic pt-2">
+            <div className="text-[10px] text-[#DFD3C3]/60 italic pt-2">
               * O vetor gerado é um arquivo SVG puro com caminhos fechados reais (não é uma imagem embutida).
             </div>
           </div>
@@ -337,8 +337,8 @@ export const VectorizeModal: React.FC<VectorizeModalProps> = ({
                   onClick={() => setActiveTab('comparison')}
                   className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                     activeTab === 'comparison'
-                      ? 'bg-[#C29B68] text-[#111]'
-                      : 'text-white/60 hover:text-white'
+                      ? 'bg-[#C29B68] text-[#2A1E17]'
+                      : 'text-[#DFD3C3] hover:text-[#FAF8F5]'
                   }`}
                 >
                   Lado a Lado
@@ -348,8 +348,8 @@ export const VectorizeModal: React.FC<VectorizeModalProps> = ({
                   onClick={() => setActiveTab('vector_only')}
                   className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                     activeTab === 'vector_only'
-                      ? 'bg-[#C29B68] text-[#111]'
-                      : 'text-white/60 hover:text-white'
+                      ? 'bg-[#C29B68] text-[#2A1E17]'
+                      : 'text-[#DFD3C3] hover:text-[#FAF8F5]'
                   }`}
                 >
                   Vetor CNC
@@ -359,8 +359,8 @@ export const VectorizeModal: React.FC<VectorizeModalProps> = ({
                   onClick={() => setActiveTab('original_only')}
                   className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                     activeTab === 'original_only'
-                      ? 'bg-[#C29B68] text-[#111]'
-                      : 'text-white/60 hover:text-white'
+                      ? 'bg-[#C29B68] text-[#2A1E17]'
+                      : 'text-[#DFD3C3] hover:text-[#FAF8F5]'
                   }`}
                 >
                   Original
@@ -380,7 +380,7 @@ export const VectorizeModal: React.FC<VectorizeModalProps> = ({
                 <div className="grid grid-cols-2 gap-3 w-full h-full items-center">
                   {/* Esquerda: Original */}
                   <div className="flex flex-col items-center justify-center p-2 bg-[#1C140F] border border-white/10 h-full">
-                    <span className="text-[10px] font-mono text-white/50 uppercase mb-2">
+                    <span className="text-[10px] font-mono text-[#DFD3C3]/70 uppercase mb-2">
                       Imagem Original
                     </span>
                     <div className="flex-1 flex items-center justify-center overflow-hidden max-h-[260px]">
@@ -393,7 +393,7 @@ export const VectorizeModal: React.FC<VectorizeModalProps> = ({
                   </div>
 
                   {/* Direita: Vetor CNC */}
-                  <div className="flex flex-col items-center justify-center p-2 bg-[#FAF8F5] border border-[#DFD3C3] h-full text-[#111]">
+                  <div className="flex flex-col items-center justify-center p-2 bg-[#FAF8F5] border border-[#DFD3C3] h-full text-[#2A1E17]">
                     <span className="text-[10px] font-mono text-[#8A5835] font-bold uppercase mb-2">
                       Vetor CNC (Simulação na Madeira)
                     </span>
@@ -410,7 +410,7 @@ export const VectorizeModal: React.FC<VectorizeModalProps> = ({
               )}
 
               {activeTab === 'vector_only' && vectorResult && (
-                <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-[#FAF8F5] text-[#111]">
+                <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-[#FAF8F5] text-[#2A1E17]">
                   <span className="text-[11px] font-mono text-[#8A5835] font-bold uppercase mb-2">
                     Arte Vetorial Limpa para Fresagem CNC
                   </span>
@@ -423,7 +423,7 @@ export const VectorizeModal: React.FC<VectorizeModalProps> = ({
 
               {activeTab === 'original_only' && (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
-                  <span className="text-[11px] font-mono text-white/60 uppercase mb-2">
+                  <span className="text-[11px] font-mono text-[#DFD3C3]/70 uppercase mb-2">
                     Imagem Original Enviada
                   </span>
                   <img
@@ -442,7 +442,7 @@ export const VectorizeModal: React.FC<VectorizeModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-2 bg-transparent hover:bg-white/10 text-white/70 hover:text-white text-xs transition-colors cursor-pointer border border-white/20"
+            className="px-3 py-2 bg-transparent hover:bg-white/10 text-[#DFD3C3] hover:text-[#FAF8F5] text-xs transition-colors cursor-pointer border border-white/20"
           >
             Cancelar
           </button>
@@ -473,7 +473,7 @@ export const VectorizeModal: React.FC<VectorizeModalProps> = ({
                   );
                 }
               }}
-              className="px-4 py-2 bg-[#C29B68] hover:bg-[#D4AC7D] text-[#111111] text-xs font-bold uppercase tracking-wider transition-all shadow-md hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
+              className="px-4 py-2 bg-[#C29B68] hover:bg-[#D4AC7D] text-[#2A1E17] text-xs font-bold uppercase tracking-wider transition-all shadow-md hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Adicionar Vetor ao Editor</span>

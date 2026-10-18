@@ -2,7 +2,21 @@ export type ProductPieceType = 'tabua_carne' | 'porta_copos';
 
 export type WoodId = 'pinus' | 'angelim' | 'cedrinho' | 'macaranduba';
 
-export type CncTechniqueId = 'baixo_relevo_resina' | 'baixo_relevo_puro';
+export type CncTechniqueId = 'baixo_relevo_resina';
+
+// Limites Máximos Físicos de Usinagem CNC para Peças do Atelier
+export const CNC_LIMITS = {
+  tabua_carne: {
+    maxXCm: 16.0, // Limite estrito do Eixo X: Máximo 16 cm (nunca 17 cm)
+    maxYCm: 25.0, // Limite estrito do Eixo Y: Máximo 25 cm
+    minDimCm: 2.5,
+  },
+  porta_copos: {
+    maxXCm: 8.5,  // Máximo 8.5 cm
+    maxYCm: 8.5,  // Máximo 8.5 cm
+    minDimCm: 2.0,
+  },
+} as const;
 
 export type FinishId = 'oleo_cera' | 'verniz_impermeavel';
 
@@ -53,6 +67,8 @@ export interface CanvasElement {
   isVectorized?: boolean;
   needsManualVectorization?: boolean;
   vectorPathCount?: number;
+  rawSvgText?: string; // Conteúdo original íntegro do arquivo SVG para CNC
+  sanitizedSvgText?: string; // Conteúdo SVG sanitizado livre de scripts para renderização segura
 
   // Dados para tipo 'text'
   text?: string;

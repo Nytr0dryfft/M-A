@@ -74,19 +74,13 @@ export const Footer: React.FC<FooterProps> = ({
               Coleções &amp; Produtos
             </span>
             <a href="#tabuas" className="text-[11px] sm:text-xs text-[#DFD3C3] hover:text-white transition-colors">
-              Tábuas Butcher Block
-            </a>
-            <a href="#tabuas" className="text-[11px] sm:text-xs text-[#DFD3C3] hover:text-white transition-colors">
-              Porta-Copos &amp; Sets
+              Tábuas de Carne &amp; Porta-Copos
             </a>
             <a href="#moveis" className="text-[11px] sm:text-xs text-[#DFD3C3] hover:text-white transition-colors">
-              Mesas Live Edge
-            </a>
-            <a href="#moveis" className="text-[11px] sm:text-xs text-[#DFD3C3] hover:text-white transition-colors">
-              Bancos Japoneses
+              Mesas &amp; Banquetas
             </a>
             <a href="#encomenda" className="text-[11px] sm:text-xs text-[#DFD3C3] hover:text-white transition-colors">
-              Personalização CNC
+              Personalização CNC Sob Medida
             </a>
           </div>
 
@@ -95,13 +89,35 @@ export const Footer: React.FC<FooterProps> = ({
             <span className="text-[11px] sm:text-xs uppercase tracking-widest text-[#C29B68] font-bold">
               Atendimento Direto
             </span>
-            <a
-              href={`tel:+${ATELIER_CONTACT.whatsappNumber}`}
-              className="text-[11px] sm:text-xs text-[#DFD3C3] hover:text-white transition-colors flex items-center gap-1.5 truncate"
-            >
-              <Phone className="w-3.5 h-3.5 text-[#8A5835] shrink-0" />
-              <span className="truncate">{ATELIER_CONTACT.displayPhone}</span>
-            </a>
+            <div className="flex flex-col gap-1">
+              <a
+                href={ATELIER_CONTACT.getWhatsAppUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] sm:text-xs text-[#DFD3C3] hover:text-white transition-colors flex items-center gap-1.5 truncate group"
+                title="Chamar no WhatsApp / Ligar (+55 24 99961-9770)"
+              >
+                <Phone className="w-3.5 h-3.5 text-[#8A5835] group-hover:text-[#C29B68] shrink-0" />
+                <span className="truncate font-medium">{ATELIER_CONTACT.displayPhone}</span>
+              </a>
+              <div className="flex items-center gap-2 text-[10px] text-[#DFD3C3]/60">
+                <a
+                  href={ATELIER_CONTACT.getWhatsAppUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#C29B68] hover:underline"
+                >
+                  Chamar no WhatsApp
+                </a>
+                <span>•</span>
+                <a
+                  href={`tel:+${ATELIER_CONTACT.whatsappNumber}`}
+                  className="hover:text-white transition-colors"
+                >
+                  Ligar
+                </a>
+              </div>
+            </div>
             <a
               href={`mailto:${ATELIER_CONTACT.email}`}
               className="text-[11px] sm:text-xs text-[#DFD3C3] hover:text-white transition-colors flex items-center gap-1.5 truncate"

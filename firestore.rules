@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Bloqueio padrão para todas as coleções não explicitamente liberadas
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Regras de Segurança para Orçamentos e Pedidos Sob Medida (Atelier M&A)
+    // Compatível com Frontend Estático no GitHub Pages
+    match /orders/{orderId} {
+      // Criação permitida pelo cliente no navegador estático com validação rigorosa de campos
+      allow create: if isValidOrderId(orderId)
+        && isValidOrderData(request.resource.data)
+        && request.resource.data.orderId == orderId
+        && request.resource.data.status == 'solicitado'
+        && request.resource.data.createdAt == request.time;
+
+      // Leitura pública bloqueada para proteger dados de contato e artes autorais dos clientes.
+      // O acesso administrativo é feito pelo Atelier no console ou com autenticação administrativa.
+      allow read: if false;
+
+      // Proibida modificação ou deleção pelo navegador do cliente após o envio
+      allow update, delete: if false;
+    }
+
+    // Funções de validação estrita (Anti-Gap e Anti-Poisoning)
+    function isValidOrderId(id) {
+      return id is string
+        && id.size() >= 5
+        && id.size() <= 40
+        && id.matches('^[A-Z0-9\\-]+$');
+    }
+
+    function isValidOrderData(data) {
+      return data.keys().hasAll([
+        'orderId',
+        'createdAt',
+        'clientName',
+        'clientContact',
+        'pieceType',
+        'pieceLabel',
+        'woodId',
+        'woodName',
+        'dimensions',
+        'technique',
+        'finish',
+        'quantity',
+        'budget',
+        'status',
+        'source'
+      ])
+      && data.clientName is string && data.clientName.size() >= 2 && data.clientName.size() <= 120
+      && data.clientContact is string && data.clientContact.size() >= 8 && data.clientContact.size() <= 40
+      && data.quantity is int && data.quantity >= 1 && data.quantity <= 100
+      && data.source == 'web_configurator';
+    }
+  }
+}

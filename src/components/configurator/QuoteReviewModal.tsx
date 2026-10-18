@@ -11,11 +11,21 @@ import {
   Check,
   Phone,
   User,
-  Hash,
   Sparkles,
+  Cloud,
+  ExternalLink,
+  Image as ImageIcon,
+  Loader2,
+  AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 import { OrderQuoteData } from '../../types/configurator';
 import { ATELIER_CONTACT } from '../../config/contact';
+import {
+  persistOrderToCloud,
+  dataUrlToBlob,
+  type OrderSubmissionResult,
+} from '../../services/orderStorage';
 
 interface QuoteReviewModalProps {
   isOpen: boolean;
@@ -43,6 +53,11 @@ export const QuoteReviewModal: React.FC<QuoteReviewModalProps> = ({
   const [copiedId, setCopiedId] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isSavingCloud, setIsSavingCloud] = useState(false);
+  const [processStage, setProcessStage] = useState<
+    'idle' | 'preparando' | 'gerando_previa' | 'enviando_arquivos' | 'pronto'
+  >('idle');
+  const [cloudResult, setCloudResult] = useState<OrderSubmissionResult | null>(null);
 
   const handleCopyId = () => {
     navigator.clipboard.writeText(orderData.orderId);
@@ -50,6 +65,7 @@ export const QuoteReviewModal: React.FC<QuoteReviewModalProps> = ({
     setTimeout(() => setCopiedId(false), 2000);
   };
 
+  // Download da Ficha Técnica completa em texto
   const handleDownloadSheet = () => {
     const textContent = `=====================================================
 ATELIER SOB MEDIDA — FICHA TÉCNICA DE ORÇAMENTO CNC
@@ -69,7 +85,7 @@ ${orderData.elements
     (el, i) =>
       `  ${i + 1}. [${el.type.toUpperCase()}] ${
         el.type === 'text' ? `"${el.text}" (${el.fontFamily})` : el.imageFileName || 'Arte gráfica'
-      } - ${el.widthCm}x${el.heightCm}cm`
+      } - ${el.widthCm}x${el.heightCm}cm (Posição: ${el.xPercent.toFixed(0)}% X, ${el.yPercent.toFixed(0)}% Y, Rot: ${el.rotationDeg}°)`
   )
   .join('\n')}
 
@@ -86,6 +102,13 @@ Contato: ${clientContact}
 E-mail: ${clientEmail || 'Não informado'}
 Observações: ${notes || 'Nenhuma'}
 
+${
+  cloudResult?.previewUrl
+    ? `LINKS DE ARMAZENAMENTO SEGURO NA NUVEM:\n• Prévia PNG da Tábua: ${cloudResult.previewUrl}\n${
+        cloudResult.artworkUrls.map((a) => `• Arquivo para CNC (${a.fileName}): ${a.downloadUrl}`).join('\n')
+      }\n`
+    : ''
+}
 * NOTA TÉCNICA: A viabilidade geométrica das ferramentas e o tempo de máquina serão confirmados previamente pelos mestres marceneiros do atelier antes da produção.
 =====================================================`;
 
@@ -98,24 +121,82 @@ Observações: ${notes || 'Nenhuma'}
     URL.revokeObjectURL(url);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Download da prévia visual da tábua renderizada em alta resolução
+  const handleDownloadPreview = () => {
+    const preview = cloudResult?.previewDataUrl || orderData.previewDataUrl;
+    if (!preview) return;
+    try {
+      const blob = dataUrlToBlob(preview);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `previa-tabua-${orderData.orderId.toLowerCase()}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Falha ao baixar prévia:', e);
+    }
+  };
+
+  // Download do arquivo SVG original ÍNTEGRO (sem conversão) para CNC
+  const handleDownloadArtworks = () => {
+    const images = orderData.elements.filter((el) => el.type === 'image' && (el.rawSvgText || el.imageSrc));
+    images.forEach((el, idx) => {
+      try {
+        let blob: Blob;
+        let ext = 'svg';
+
+        if (el.isSvg) {
+          ext = 'svg';
+          if (el.rawSvgText) {
+            blob = new Blob([el.rawSvgText], { type: 'image/svg+xml;charset=utf-8' });
+          } else {
+            blob = dataUrlToBlob(el.imageSrc || '');
+          }
+        } else {
+          ext = el.imageFileType?.includes('png') ? 'png' : 'jpg';
+          blob = dataUrlToBlob(el.imageSrc || '');
+        }
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const cleanName = (el.imageFileName || `arte-${idx + 1}`)
+          .replace(/\.[^/.]+$/, '')
+          .replace(/[^a-zA-Z0-9_-]/g, '_');
+        a.download = `${cleanName}-${orderData.orderId.toLowerCase()}.${ext}`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        console.error('Falha ao baixar arte original:', e);
+      }
+    });
+  };
+
+  // Submissão do Orçamento com Gravação Real e Validações
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clientName.trim()) {
-      setErrorMsg('Por favor, informe seu nome completo.');
+    if (isSavingCloud) return;
+
+    if (!clientName.trim() || clientName.trim().length < 2) {
+      setErrorMsg('Por favor, informe seu nome completo (mínimo 2 caracteres).');
       return;
     }
-    if (!clientContact.trim()) {
-      setErrorMsg('Por favor, informe seu número de WhatsApp ou telefone de contato.');
+    if (!clientContact.trim() || clientContact.replace(/\D/g, '').length < 8) {
+      setErrorMsg('Por favor, informe seu número de WhatsApp com DDD para contato.');
       return;
     }
     if (!imageRightsConfirmed && orderData.elements.some((el) => el.type === 'image')) {
       setErrorMsg(
-        'É obrigatório confirmar a declaração de responsabilidade sobre os direitos autorais da imagem enviada.'
+        'É obrigatório confirmar a declaração de responsabilidade sobre os direitos autorais da arte enviada.'
       );
       return;
     }
 
     setErrorMsg('');
+    setIsSavingCloud(true);
+    setProcessStage('preparando');
+
     const finalOrder: OrderQuoteData = {
       ...orderData,
       clientName: clientName.trim(),
@@ -126,34 +207,70 @@ Observações: ${notes || 'Nenhuma'}
       imageRightsConfirmed,
     };
 
-    onConfirmOrder(finalOrder);
-    setSubmitted(true);
+    try {
+      // 1. Gera prévia PNG fiel
+      // 2. Preserva SVG íntegro
+      // 3. Grava no Firebase Storage e Firestore (se configurado)
+      // 4. Salva backup local redundante
+      const result = await persistOrderToCloud(finalOrder, (stage) => {
+        setProcessStage(stage);
+      });
+
+      setCloudResult(result);
+      setSubmitted(true);
+
+      if (result.success) {
+        onConfirmOrder(finalOrder);
+      }
+    } catch (err: any) {
+      setCloudResult({
+        success: false,
+        isExternalStorageActive: true,
+        orderId: orderData.orderId,
+        artworkUrls: [],
+        error: err.message || 'Erro inesperado na gravação em nuvem.',
+      });
+      setSubmitted(true);
+    } finally {
+      setIsSavingCloud(false);
+      setProcessStage('pronto');
+    }
   };
 
-  // Gerador de mensagem profissional para WhatsApp
+  // Gerador de mensagem profissional para WhatsApp sem dupla codificação
   const generateWhatsAppUrl = () => {
     const totalVal = (orderData.budget.totalEstimated * quantity).toFixed(2).replace('.', ',');
-    const elementsList = orderData.elements
-      .map((el) => (el.type === 'text' ? `"${el.text}"` : el.imageFileName || 'Arte do cliente'))
-      .join(', ');
 
-    const text = encodeURIComponent(
-      `Olá Atelier Sob Medida! Gostaria de solicitar a análise técnica e orçamento do meu projeto autoral:\n\n` +
-        `🆔 *Código do Pedido:* ${orderData.orderId}\n` +
-        `🪵 *Peça:* ${orderData.pieceLabel}\n` +
-        `🌲 *Madeira:* ${orderData.woodName} (${orderData.dimensions.lengthCm}x${orderData.dimensions.widthCm}x${orderData.dimensions.thicknessCm.toFixed(1)} cm)\n` +
-        `⚙️ *Técnica:* ${orderData.technique.name}\n` +
-        `🎨 *Acabamento:* ${orderData.finish.name}\n` +
-        `📐 *Elementos configurados:* ${elementsList || 'Peça lisa com canaleta'}\n` +
-        `🔢 *Quantidade:* ${quantity} unid.\n` +
-        `💰 *Estimativa:* R$ ${totalVal}\n\n` +
-        `👤 *Cliente:* ${clientName}\n` +
-        `📞 *Contato:* ${clientContact}\n` +
-        `📝 *Observações:* ${notes || 'Nenhuma'}\n\n` +
-        `Declaro ter autorização de uso das artes enviadas e aguardo a confirmação da viabilidade CNC.`
-    );
+    let cloudLinksMsg = '';
+    if (cloudResult?.success && cloudResult.previewUrl) {
+      cloudLinksMsg += `\n🖼️ *Prévia da Tábua:* ${cloudResult.previewUrl}`;
+      if (cloudResult.artworkUrls && cloudResult.artworkUrls.length > 0) {
+        cloudResult.artworkUrls.forEach((art) => {
+          cloudLinksMsg += `\n📐 *SVG Original para CNC:* ${art.downloadUrl}`;
+        });
+      }
+    } else {
+      cloudLinksMsg += `\n📎 *Arquivos de Arte:* Prévia PNG e SVG original gerados (código de identificação: ${orderData.orderId}).`;
+    }
 
-    return ATELIER_CONTACT.getWhatsAppUrl(text);
+    // Monta a mensagem primeiro como texto normal com quebras de linha e acentos naturais
+    const rawMessage =
+      `Olá Atelier Sob Medida! Gostaria de solicitar a análise técnica e orçamento do meu projeto autoral.\n\n` +
+      `🆔 *Código do Pedido:* ${orderData.orderId}\n\n` +
+      `🪵 *Peça:* ${orderData.pieceLabel}\n\n` +
+      `🌲 *Madeira:* ${orderData.woodName} (${orderData.dimensions.lengthCm}x${orderData.dimensions.widthCm}x${orderData.dimensions.thicknessCm.toFixed(1)} cm)\n\n` +
+      `⚙️ *Técnica:* ${orderData.technique.name}\n\n` +
+      `🎨 *Acabamento:* ${orderData.finish.name}\n\n` +
+      `🔢 *Quantidade:* ${quantity} unid.\n\n` +
+      `💰 *Estimativa:* R$ ${totalVal}\n\n` +
+      `👤 *Cliente:* ${clientName}\n\n` +
+      `📞 *Contato:* ${clientContact}\n\n` +
+      `📝 *Observações:* ${notes || 'Nenhuma'}\n` +
+      cloudLinksMsg +
+      `\n\nDeclaro ter autorização de uso das artes enviadas e aguardo a confirmação da viabilidade CNC.`;
+
+    // Passa o texto normal diretamente ao getWhatsAppUrl, garantindo codificação única
+    return ATELIER_CONTACT.getWhatsAppUrl(rawMessage);
   };
 
   return (
@@ -165,7 +282,11 @@ Observações: ${notes || 'Nenhuma'}
             <Sparkles className="w-5 h-5 text-[#C29B68]" />
             <div>
               <h3 className="font-serif text-lg sm:text-xl font-bold tracking-tight">
-                {submitted ? 'Orçamento Registrado com Sucesso' : 'Revisão & Solicitação de Orçamento'}
+                {submitted
+                  ? cloudResult?.success
+                    ? 'Orçamento Registrado na Nuvem com Sucesso'
+                    : 'Orçamento Preparado para WhatsApp'
+                  : 'Revisão & Solicitação de Orçamento'}
               </h3>
               <span className="text-[11px] text-[#DFD3C3]/80">
                 Atelier Sob Medida · Análise Técnica de Viabilidade CNC
@@ -185,21 +306,125 @@ Observações: ${notes || 'Nenhuma'}
         {/* Conteúdo */}
         <div className="p-4 sm:p-8 space-y-6">
           {submitted ? (
-            /* Tela de Confirmação & Próximos Passos */
+            /* Tela de Confirmação & Próximos Passos com Feedback Real e Honesto */
             <div className="space-y-6 text-center animate-fadeIn py-2">
-              <div className="w-16 h-16 rounded-full bg-[#8A5835]/15 text-[#8A5835] flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-9 h-9" />
-              </div>
+              {cloudResult?.success ? (
+                /* Cenário 1: Armazenamento Real no Firebase concluído */
+                <>
+                  <div className="w-16 h-16 rounded-full bg-[#8A5835]/15 text-[#8A5835] flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="w-9 h-9" />
+                  </div>
 
-              <div>
-                <h4 className="font-serif text-2xl font-bold text-[#111111]">
-                  Solicitação {orderData.orderId} Recebida!
-                </h4>
-                <p className="text-xs sm:text-sm text-[#5C4033] max-w-md mx-auto mt-2 leading-relaxed">
-                  Obrigado, <strong>{clientName}</strong>. Sua especificação autoral para a peça em{' '}
-                  <strong>{orderData.woodName}</strong> foi registrada no atelier para conferência técnica de fresas e grãos.
-                </p>
-              </div>
+                  <div>
+                    <h4 className="font-serif text-2xl font-bold text-[#111111]">
+                      Solicitação {orderData.orderId} Salva na Nuvem!
+                    </h4>
+                    <p className="text-xs sm:text-sm text-[#5C4033] max-w-md mx-auto mt-2 leading-relaxed">
+                      Obrigado, <strong>{clientName}</strong>. Sua especificação autoral para a peça em{' '}
+                      <strong>{orderData.woodName}</strong> foi armazenada no banco de dados e no storage em nuvem.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 bg-[#FAF3EA] border border-[#C29B68]/60 text-left space-y-2 max-w-md mx-auto">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[#8A5835]">
+                      <Cloud className="w-4 h-4 text-[#8A5835]" />
+                      <span>Arquivos Salvos e Prontos para o Atelier</span>
+                    </div>
+                    <p className="text-[11px] text-[#5C4033] leading-relaxed">
+                      A prévia da peça e seus arquivos de arte foram armazenados na nuvem e os links diretos foram incluídos na sua mensagem do WhatsApp.
+                    </p>
+                    {cloudResult.previewUrl && (
+                      <div className="pt-1 flex flex-col gap-1.5 border-t border-[#DFD3C3]/60">
+                        <a
+                          href={cloudResult.previewUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[11px] text-[#8A5835] font-semibold underline flex items-center gap-1 hover:text-[#111]"
+                        >
+                          <ExternalLink className="w-3 h-3 shrink-0" />
+                          <span>Conferir Prévia da Tábua (PNG Alta Resolução)</span>
+                        </a>
+                        {cloudResult.artworkUrls.map((art, idx) => (
+                          <a
+                            key={idx}
+                            href={art.downloadUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] text-[#8A5835] font-semibold underline flex items-center gap-1 hover:text-[#111]"
+                          >
+                            <ExternalLink className="w-3 h-3 shrink-0" />
+                            <span>Baixar SVG Original da Arte ({art.originalFileName})</span>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : !cloudResult?.isExternalStorageActive ? (
+                /* Cenário 2: Nuvem Não Configurada (Aviso Claro sem confirmação falsa) */
+                <>
+                  <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center mx-auto">
+                    <AlertTriangle className="w-9 h-9" />
+                  </div>
+
+                  <div>
+                    <h4 className="font-serif text-2xl font-bold text-[#111111]">
+                      Orçamento {orderData.orderId} Gerado Localmente
+                    </h4>
+                    <p className="text-xs sm:text-sm text-[#5C4033] max-w-md mx-auto mt-2 leading-relaxed">
+                      Olá, <strong>{clientName}</strong>. Seu projeto foi montado, validado e salvo localmente no navegador sob o identificador acima.
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-amber-50/80 border border-amber-300 text-left space-y-2 max-w-lg mx-auto text-xs">
+                    <div className="flex items-center gap-2 font-bold text-amber-900">
+                      <Cloud className="w-4 h-4 text-amber-700 shrink-0" />
+                      <span>Armazenamento em Nuvem Não Configurado</span>
+                    </div>
+                    <p className="text-[11px] text-amber-950 leading-relaxed">
+                      O serviço em nuvem externo (Firebase) ainda não está ativo neste ambiente para hospedar links públicos.
+                      Os arquivos de prévia e SVG foram gerados no seu navegador.
+                    </p>
+                    <div className="p-2.5 bg-white border border-amber-200 rounded-xs space-y-1 text-[11px]">
+                      <strong className="text-[#2A1E17] block">Como proceder agora:</strong>
+                      <span className="text-[#5C4033] block">
+                        1. Clique abaixo em <strong>"Baixar Prévia (.png)"</strong> e <strong>"Baixar Minha Arte"</strong> para guardar os arquivos.
+                      </span>
+                      <span className="text-[#5C4033] block">
+                        2. Abra o WhatsApp e anexe as imagens na conversa junto com a mensagem técnica formatada.
+                      </span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* Cenário 3: Falha na gravação em nuvem */
+                <>
+                  <div className="w-16 h-16 rounded-full bg-red-100 text-red-800 flex items-center justify-center mx-auto">
+                    <AlertCircle className="w-9 h-9" />
+                  </div>
+
+                  <div>
+                    <h4 className="font-serif text-2xl font-bold text-red-900">
+                      Falha ao Gravar no Serviço de Nuvem
+                    </h4>
+                    <p className="text-xs sm:text-sm text-[#5C4033] max-w-md mx-auto mt-2 leading-relaxed">
+                      Não foi possível registrar o pedido no servidor: <strong>{cloudResult?.error}</strong>.
+                      Seus dados continuam preservados no navegador.
+                    </p>
+                  </div>
+
+                  <div className="max-w-md mx-auto">
+                    <button
+                      type="button"
+                      onClick={() => setSubmitted(false)}
+                      className="py-2.5 px-4 bg-[#8A5835] hover:bg-[#6F4226] text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 mx-auto cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Tentar Gravar Novamente</span>
+                    </button>
+                  </div>
+                </>
+              )}
 
               {/* Card com Código do Pedido */}
               <div className="p-4 bg-[#FCF9F3] border border-[#DFD3C3] max-w-md mx-auto text-center space-y-2">
@@ -216,16 +441,16 @@ Observações: ${notes || 'Nenhuma'}
                     className="p-1.5 hover:bg-[#DFD3C3]/50 text-[#8A5835] transition-colors cursor-pointer"
                     title="Copiar código"
                   >
-                    {copiedId ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                    {copiedId ? <Check className="w-4 h-4 text-[#8A5835]" /> : <Copy className="w-4 h-4" />}
                   </button>
                 </div>
                 <span className="text-[10px] text-[#5C4033] block">
-                  Utilize este código para acompanhar o status e o envio da sua peça.
+                  Guarde este identificador para consultas técnicas com os marceneiros do atelier.
                 </span>
               </div>
 
               {/* Ações pós-envio */}
-              <div className="max-w-md mx-auto space-y-3 pt-2">
+              <div className="max-w-md mx-auto space-y-2.5 pt-2">
                 <a
                   href={generateWhatsAppUrl()}
                   target="_blank"
@@ -233,26 +458,56 @@ Observações: ${notes || 'Nenhuma'}
                   className="w-full py-4 bg-[#8A5835] hover:bg-[#6F4226] text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-colors cursor-pointer border border-[#C29B68]/60"
                 >
                   <Send className="w-4 h-4 text-[#FAF8F5]" />
-                  <span>Enviar Especificação no WhatsApp Agora</span>
+                  <span>Abrir WhatsApp com Especificação Legível</span>
                 </a>
 
-                <button
-                  type="button"
-                  onClick={handleDownloadSheet}
-                  className="w-full py-3 bg-white border border-[#DFD3C3] hover:border-[#8A5835] text-[#111111] text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                >
-                  <Download className="w-4 h-4 text-[#8A5835]" />
-                  <span>Baixar Ficha Técnica do Projeto (.txt)</span>
-                </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDownloadSheet}
+                    className="py-2.5 px-3 bg-white border border-[#DFD3C3] hover:border-[#8A5835] text-[#111111] text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-[#8A5835]" />
+                    <span>Ficha (.txt)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadPreview}
+                    className="py-2.5 px-3 bg-white border border-[#DFD3C3] hover:border-[#8A5835] text-[#111111] text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <ImageIcon className="w-3.5 h-3.5 text-[#8A5835]" />
+                    <span>Baixar Prévia (.png)</span>
+                  </button>
+                </div>
+
+                {orderData.elements.some((el) => el.type === 'image' && el.imageSrc) && (
+                  <button
+                    type="button"
+                    onClick={handleDownloadArtworks}
+                    className="w-full py-2.5 bg-[#FAF3EA] border border-[#C29B68]/60 hover:bg-[#DFD3C3]/40 text-[#8A5835] text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-[#8A5835]" />
+                    <span>Baixar Arquivo da Minha Arte (SVG Original)</span>
+                  </button>
+                )}
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 flex items-center justify-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setSubmitted(false)}
+                  className="text-xs text-[#8A5835] hover:text-[#111111] font-semibold underline cursor-pointer"
+                >
+                  Revisar Dados do Formulário
+                </button>
+                <span>·</span>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="text-xs text-[#8A5835] hover:text-[#111111] font-semibold underline cursor-pointer"
+                  className="text-xs text-[#5C4033] hover:text-[#111111] font-semibold cursor-pointer"
                 >
-                  Voltar ao Configurador
+                  Fechar Modal
                 </button>
               </div>
             </div>
@@ -295,7 +550,7 @@ Observações: ${notes || 'Nenhuma'}
                   </div>
                   <div>
                     <span className="text-[10px] text-[#8A5835] font-semibold block uppercase">Elementos</span>
-                    <span className="text-[#111]">{orderData.elements.length} adicionados</span>
+                    <span className="text-[#111]">{orderData.elements.length} configurados</span>
                   </div>
                 </div>
 
@@ -342,7 +597,7 @@ Observações: ${notes || 'Nenhuma'}
                         required
                         value={clientContact}
                         onChange={(e) => setClientContact(e.target.value)}
-                        placeholder="(11) 99999-9999"
+                        placeholder="(24) 99999-9999"
                         className="w-full pl-9 pr-3 py-2.5 bg-white border border-[#DFD3C3] text-xs text-[#111] focus:outline-[#8A5835] shadow-xs"
                       />
                       <Phone className="w-4 h-4 text-[#8A5835] absolute left-2.5 top-3" />
@@ -418,20 +673,36 @@ Observações: ${notes || 'Nenhuma'}
                 </div>
               )}
 
-              {/* Botão de Envio */}
+              {/* Botão de Envio com Bloqueio de Cliques Repetidos */}
               <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
                 <button
                   type="submit"
-                  className="w-full sm:flex-1 py-4 bg-[#2A1E17] hover:bg-[#8A5835] text-white text-xs font-bold uppercase tracking-widest transition-colors shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                  disabled={isSavingCloud}
+                  className="w-full sm:flex-1 py-4 bg-[#2A1E17] hover:bg-[#8A5835] disabled:opacity-60 disabled:pointer-events-none text-white text-xs font-bold uppercase tracking-widest transition-colors shadow-lg flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <Send className="w-4 h-4 text-[#C29B68]" />
-                  <span>
-                    Confirmar Solicitação de Orçamento (
-                    {quantity > 1
-                      ? `${quantity} un. · R$ ${(orderData.budget.totalEstimated * quantity).toFixed(2).replace('.', ',')}`
-                      : `R$ ${orderData.budget.totalEstimated.toFixed(2).replace('.', ',')}`}
-                    )
-                  </span>
+                  {isSavingCloud ? (
+                    <>
+                      <Loader2 className="w-4 h-4 text-[#C29B68] animate-spin" />
+                      <span>
+                        {processStage === 'gerando_previa'
+                          ? 'Renderizando Prévia em Alta Resolução...'
+                          : processStage === 'enviando_arquivos'
+                          ? 'Enviando SVG e Prévia para Armazenamento...'
+                          : 'Validando e Gravando Pedido...'}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 text-[#C29B68]" />
+                      <span>
+                        Confirmar Solicitação de Orçamento (
+                        {quantity > 1
+                          ? `${quantity} un. · R$ ${(orderData.budget.totalEstimated * quantity).toFixed(2).replace('.', ',')}`
+                          : `R$ ${orderData.budget.totalEstimated.toFixed(2).replace('.', ',')}`}
+                        )
+                      </span>
+                    </>
+                  )}
                 </button>
 
                 <button

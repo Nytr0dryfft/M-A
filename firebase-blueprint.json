@@ -1,0 +1,102 @@
+{
+  "entities": {
+    "Order": {
+      "title": "Order",
+      "description": "Pedido ou orçamento sob medida gerado pelo configurador CNC do Atelier M&A",
+      "type": "object",
+      "properties": {
+        "orderId": {
+          "type": "string",
+          "description": "Identificador único do pedido",
+          "pattern": "^[A-Z0-9\\-]+$",
+          "maxLength": 40
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Data e hora de registro no servidor"
+        },
+        "clientName": {
+          "type": "string",
+          "description": "Nome completo do cliente",
+          "maxLength": 120,
+          "minLength": 2
+        },
+        "clientContact": {
+          "type": "string",
+          "description": "Telefone ou WhatsApp de contato",
+          "maxLength": 40,
+          "minLength": 8
+        },
+        "clientEmail": {
+          "type": "string",
+          "description": "E-mail para cópia da ficha técnica",
+          "maxLength": 120
+        },
+        "pieceType": {
+          "type": "string",
+          "enum": ["tabua_carne", "porta_copos"],
+          "description": "Tipo da peça do atelier"
+        },
+        "pieceLabel": {
+          "type": "string",
+          "description": "Nome descritivo da peça"
+        },
+        "woodId": {
+          "type": "string",
+          "description": "Identificador da madeira"
+        },
+        "woodName": {
+          "type": "string",
+          "description": "Nome da espécie de madeira"
+        },
+        "technique": {
+          "type": "string",
+          "description": "Técnica de usinagem e acabamento CNC"
+        },
+        "finish": {
+          "type": "string",
+          "description": "Tipo de cura e selamento"
+        },
+        "quantity": {
+          "type": "integer",
+          "description": "Quantidade de unidades solicitadas"
+        },
+        "previewUrl": {
+          "type": "string",
+          "description": "URL pública de download da prévia visual da peça no Firebase Storage"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["solicitado", "analise_tecnica", "aprovado", "em_producao", "concluido"],
+          "description": "Estado atual do orçamento"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["web_configurator"]
+        }
+      },
+      "required": [
+        "orderId",
+        "createdAt",
+        "clientName",
+        "clientContact",
+        "pieceType",
+        "pieceLabel",
+        "woodId",
+        "woodName",
+        "technique",
+        "finish",
+        "quantity",
+        "status",
+        "source"
+      ]
+    }
+  },
+  "firestore": {
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Coleção segura de pedidos e orçamentos do configurador"
+    }
+  }
+}
