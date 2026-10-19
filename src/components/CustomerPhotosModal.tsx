@@ -11,6 +11,7 @@ import {
 import {
   CustomerPhoto,
   loadCustomerPhotos,
+  getCachedCustomerPhotos,
 } from '../services/customerPhotosService';
 import { CustomerPhotosAdminModal } from './CustomerPhotosAdminModal';
 
@@ -23,26 +24,120 @@ interface CustomerPhotosModalProps {
   categoryFilter?: PhotoCategory | null;
 }
 
+/**
+ * Cartão de foto na galeria do modal com miniatura compacta,
+ * skeleton de carregamento e transição suave.
+ */
+const ModalPhotoCard: React.FC<{
+  photo: CustomerPhoto;
+  onSelect: (photo: CustomerPhoto) => void;
+}> = ({ photo, onSelect }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const displayUrl = photo.thumbnailUrl || photo.imageUrl;
+
+  return (
+    <div
+      onClick={() => onSelect(photo)}
+      className="bg-white border border-[#DFD3C3] overflow-hidden group hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
+    >
+      <div className="relative aspect-[16/10] bg-[#2A1E17] overflow-hidden">
+        {/* Skeleton de carregamento */}
+        {!imageLoaded && !imageError && (
+          <div className="absolute inset-0 bg-[#2A1E17]/25 animate-pulse flex items-center justify-center">
+            <div className="w-6 h-6 rounded-full border-2 border-[#8A5835]/40 border-t-transparent animate-spin" />
+          </div>
+        )}
+
+        <img
+          src={displayUrl}
+          alt={photo.title || photo.category}
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setImageLoaded(true)}
+          onError={() => setImageError(true)}
+          className={`w-full h-full object-cover group-hover:scale-104 transition-all duration-500 ${
+            imageLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
+
+        <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-[#111111]/85 backdrop-blur-md text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 z-10">
+          {photo.category}
+        </span>
+
+        {/* Botão Ver Foto */}
+        <div className="absolute bottom-2 right-2 bg-black/75 backdrop-blur-xs text-white text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider flex items-center gap-1 z-10">
+          <ZoomIn className="w-3 h-3 text-[#C29B68]" />
+          <span>Ver</span>
+        </div>
+      </div>
+
+      <div className="p-3 sm:p-4 bg-white flex-1 flex flex-col justify-between">
+        <div>
+          {typeof photo.rating === 'number' && (
+            <div className="flex items-center gap-0.5 text-[#C29B68] text-xs mb-1">
+              {[...Array(photo.rating)].map((_, i) => (
+                <Star key={i} className="w-3 h-3 fill-current" />
+              ))}
+              <span className="text-[10px] text-[#8A5835] ml-1 font-mono font-bold">{photo.rating}.0</span>
+            </div>
+          )}
+
+          {photo.title && (
+            <h4 className="font-serif text-sm sm:text-base font-bold text-[#111] line-clamp-1 mb-1">
+              {photo.title}
+            </h4>
+          )}
+
+          {(photo.clientName || photo.city) && (
+            <p className="text-[11px] text-[#8A5835] font-semibold truncate mb-1">
+              {photo.clientName && <span>{photo.clientName}</span>}
+              {photo.clientName && photo.city && <span> • </span>}
+              {photo.city && <span>{photo.city}</span>}
+            </p>
+          )}
+
+          {photo.comment && (
+            <p className="text-xs text-[#5C4033] italic line-clamp-2 mt-1">
+              "{photo.comment}"
+            </p>
+          )}
+        </div>
+
+        <div className="pt-3 mt-2 border-t border-[#DFD3C3]/50 flex items-center justify-between text-xs font-bold text-[#8A5835]">
+          <span>Ver detalhes</span>
+          <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const CustomerPhotosModal: React.FC<CustomerPhotosModalProps> = ({
   isOpen,
   onClose,
   onGoToCustomizer,
   categoryFilter = null,
 }) => {
-  const [photos, setPhotos] = useState<CustomerPhoto[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Inicialização com cache local instantâneo (0ms)
+  const [photos, setPhotos] = useState<CustomerPhoto[]>(() => getCachedCustomerPhotos(true));
+  const [loading, setLoading] = useState<boolean>(() => getCachedCustomerPhotos(true).length === 0);
   const [selectedPhoto, setSelectedPhoto] = useState<CustomerPhoto | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('todos');
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [fullImageLoaded, setFullImageLoaded] = useState(false);
 
   const fetchPhotos = async () => {
-    setLoading(true);
+    if (photos.length === 0) {
+      setLoading(true);
+    }
     try {
       const data = await loadCustomerPhotos(true); // Apenas publicadas
-      setPhotos(data);
+      if (data && data.length > 0) {
+        setPhotos(data);
+      }
     } catch (e) {
       console.error(e);
-      setPhotos([]);
     } finally {
       setLoading(false);
     }
@@ -52,6 +147,7 @@ export const CustomerPhotosModal: React.FC<CustomerPhotosModalProps> = ({
     if (isOpen) {
       fetchPhotos();
       setSelectedPhoto(null);
+      setFullImageLoaded(false);
     }
   }, [isOpen]);
 
@@ -219,13 +315,22 @@ export const CustomerPhotosModal: React.FC<CustomerPhotosModalProps> = ({
               </button>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                <div className="relative aspect-[4/3] bg-[#111] overflow-hidden border border-[#DFD3C3]">
+                <div className="relative aspect-[4/3] bg-[#111] overflow-hidden border border-[#DFD3C3] flex items-center justify-center">
+                  {!fullImageLoaded && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#1C1917]/80 text-[#DFD3C3]">
+                      <div className="w-7 h-7 rounded-full border-2 border-[#8A5835] border-t-transparent animate-spin" />
+                      <span className="text-xs font-semibold">Carregando imagem original...</span>
+                    </div>
+                  )}
                   <img
                     src={selectedPhoto.imageUrl}
                     alt={selectedPhoto.title || selectedPhoto.category}
-                    className="w-full h-full object-contain"
+                    className={`w-full h-full object-contain transition-opacity duration-300 ${
+                      fullImageLoaded ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    onLoad={() => setFullImageLoaded(true)}
                   />
-                  <span className="absolute top-3 left-3 bg-black/75 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1">
+                  <span className="absolute top-3 left-3 bg-black/75 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1 z-10">
                     {selectedPhoto.category}
                   </span>
                 </div>
@@ -288,70 +393,17 @@ export const CustomerPhotosModal: React.FC<CustomerPhotosModalProps> = ({
               </div>
             </div>
           ) : (
-            /* Grid of Customer Photos - 2 columns */
+            /* Grid of Customer Photos - 2 columns com miniaturas otimizadas */
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               {filteredPhotos.map((photo) => (
-                <div
+                <ModalPhotoCard
                   key={photo.id}
-                  onClick={() => setSelectedPhoto(photo)}
-                  className="bg-white border border-[#DFD3C3] overflow-hidden group hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
-                >
-                  <div className="relative aspect-[16/10] bg-[#2A1E17] overflow-hidden">
-                    <img
-                      src={photo.imageUrl}
-                      alt={photo.title || photo.category}
-                      className="w-full h-full object-cover group-hover:scale-104 transition-transform duration-500"
-                    />
-
-                    <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-[#111111]/85 backdrop-blur-md text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-2 py-0.5">
-                      {photo.category}
-                    </span>
-
-                    {/* Botão Ver Foto */}
-                    <div className="absolute bottom-2 right-2 bg-black/75 backdrop-blur-xs text-white text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider flex items-center gap-1">
-                      <ZoomIn className="w-3 h-3 text-[#C29B68]" />
-                      <span>Ver</span>
-                    </div>
-                  </div>
-
-                  <div className="p-3 sm:p-4 bg-white flex-1 flex flex-col justify-between">
-                    <div>
-                      {typeof photo.rating === 'number' && (
-                        <div className="flex items-center gap-0.5 text-[#C29B68] text-xs mb-1">
-                          {[...Array(photo.rating)].map((_, i) => (
-                            <Star key={i} className="w-3 h-3 fill-current" />
-                          ))}
-                          <span className="text-[10px] text-[#8A5835] ml-1 font-mono font-bold">{photo.rating}.0</span>
-                        </div>
-                      )}
-
-                      {photo.title && (
-                        <h4 className="font-serif text-sm sm:text-base font-bold text-[#111] line-clamp-1 mb-1">
-                          {photo.title}
-                        </h4>
-                      )}
-
-                      {(photo.clientName || photo.city) && (
-                        <p className="text-[11px] text-[#8A5835] font-semibold truncate mb-1">
-                          {photo.clientName && <span>{photo.clientName}</span>}
-                          {photo.clientName && photo.city && <span> • </span>}
-                          {photo.city && <span>{photo.city}</span>}
-                        </p>
-                      )}
-
-                      {photo.comment && (
-                        <p className="text-xs text-[#5C4033] italic line-clamp-2 mt-1">
-                          "{photo.comment}"
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="pt-3 mt-2 border-t border-[#DFD3C3]/50 flex items-center justify-between text-xs font-bold text-[#8A5835]">
-                      <span>Ver detalhes</span>
-                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </div>
+                  photo={photo}
+                  onSelect={(p) => {
+                    setFullImageLoaded(false);
+                    setSelectedPhoto(p);
+                  }}
+                />
               ))}
             </div>
           )}

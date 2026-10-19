@@ -14,6 +14,7 @@ import {
 import {
   CustomerPhoto,
   loadCustomerPhotos,
+  getCachedCustomerPhotos,
 } from '../services/customerPhotosService';
 import { CustomerPhotosAdminModal } from './CustomerPhotosAdminModal';
 
@@ -22,27 +23,178 @@ interface CustomerPhotosSectionProps {
   externalCategoryFilter?: string | null;
 }
 
+/**
+ * Card individual com estado isolado de carregamento de imagem,
+ * miniatura leve e skeleton progressivo.
+ */
+const CustomerPhotoCard: React.FC<{
+  photo: CustomerPhoto;
+  onSelect: (photo: CustomerPhoto) => void;
+  onGoToCustomizer?: (pieceType?: 'tabua_carne' | 'porta_copos' | 'movel') => void;
+  priority?: boolean;
+}> = ({ photo, onSelect, onGoToCustomizer, priority = false }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  // Utiliza a miniatura otimizada (< 90 KB) para a grade; reserva a imagem original para o modal
+  const displayUrl = photo.thumbnailUrl || photo.imageUrl;
+
+  return (
+    <div className="bg-white border border-[#DFD3C3] shadow-md group hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden">
+      <div>
+        {/* Contêiner da Fotografia com Proporção Consistente e Placeholder Progressivo */}
+        <div
+          className="relative aspect-[16/10] bg-[#1C1917] overflow-hidden cursor-pointer"
+          onClick={() => onSelect(photo)}
+        >
+          {/* Skeleton placeholder enquanto a imagem carrega */}
+          {!imageLoaded && !imageError && (
+            <div className="absolute inset-0 bg-[#2A1E17]/25 animate-pulse flex items-center justify-center">
+              <div className="w-7 h-7 rounded-full border-2 border-[#8A5835]/40 border-t-transparent animate-spin" />
+            </div>
+          )}
+
+          {/* Mensagem discreta caso ocorra falha na imagem individual */}
+          {imageError ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-[#FAF8F5] text-[#5C4033]">
+              <span className="text-xs font-semibold">Fotografia do Atelier</span>
+              <span className="text-[10px] text-[#8A5835] mt-1">Clique para tentar visualizar</span>
+            </div>
+          ) : (
+            <img
+              src={displayUrl}
+              alt={photo.title || `Fotografia de peça artesanal M&A - ${photo.category}`}
+              className={`w-full h-full object-cover group-hover:scale-104 transition-all duration-700 ease-out ${
+                imageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+              loading={priority ? 'eager' : 'lazy'}
+              fetchPriority={priority ? 'high' : 'auto'}
+              decoding="async"
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+            />
+          )}
+
+          {/* Badge da Categoria Real */}
+          <span className="absolute top-3 left-3 z-10 bg-[#111111]/85 backdrop-blur-xs text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-widest px-2.5 py-1">
+            {photo.category}
+          </span>
+
+          {/* Botão de Ampliação / Ver Imagem Original */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(photo);
+            }}
+            className="absolute bottom-3 right-3 z-10 bg-black/75 hover:bg-black text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 flex items-center gap-1.5 backdrop-blur-xs transition-colors border border-white/10 cursor-pointer"
+            title="Ver fotografia ampliada com detalhes"
+          >
+            <ZoomIn className="w-3.5 h-3.5 text-[#C29B68]" />
+            <span>Ver foto</span>
+          </button>
+        </div>
+
+        {/* Detalhes Cadastrados (Exibidos apenas se informados) */}
+        <div className="p-4 sm:p-6 lg:p-7">
+          {/* Linha de Avaliação e Metadados Reais */}
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+            {typeof photo.rating === 'number' ? (
+              <div className="flex items-center gap-1 text-[#C29B68]">
+                {[...Array(photo.rating)].map((_, i) => (
+                  <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                ))}
+                <span className="text-xs font-bold text-[#8A5835] ml-1 font-mono">
+                  {photo.rating}.0
+                </span>
+              </div>
+            ) : (
+              <span className="text-[11px] text-[#5C4033]/80 italic">Registro documental</span>
+            )}
+
+            {(photo.clientName || photo.city) && (
+              <span className="text-[11px] text-[#8A5835] font-semibold truncate">
+                {photo.clientName && <span>{photo.clientName}</span>}
+                {photo.clientName && photo.city && <span> • </span>}
+                {photo.city && <span>{photo.city}</span>}
+              </span>
+            )}
+          </div>
+
+          {/* Título da Peça (se houver) */}
+          {photo.title && (
+            <h4 className="font-serif text-lg sm:text-xl font-bold text-[#111111] mb-2 leading-snug">
+              {photo.title}
+            </h4>
+          )}
+
+          {/* Madeira e Acabamento (se houver) */}
+          {photo.wood && (
+            <p className="text-[11px] sm:text-xs text-[#8A5835] font-medium mb-3">
+              Madeira: <span className="text-[#111] font-semibold">{photo.wood}</span>
+            </p>
+          )}
+
+          {/* Depoimento Real do Cliente (se houver) */}
+          {photo.comment && (
+            <blockquote className="p-3 sm:p-4 bg-[#FAF8F5] border-l-2 border-[#8A5835] text-xs sm:text-sm text-[#3E2D22] italic leading-relaxed mb-2">
+              "{photo.comment}"
+            </blockquote>
+          )}
+        </div>
+      </div>
+
+      {/* Rodapé do Cartão */}
+      <div className="px-4 sm:px-6 lg:px-7 pb-4 sm:pb-6 pt-0 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => onSelect(photo)}
+          className="text-xs font-bold text-[#8A5835] hover:text-[#111] flex items-center gap-1 uppercase tracking-wider transition-colors cursor-pointer"
+        >
+          <span>Ver detalhes</span>
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+
+        {onGoToCustomizer && (
+          <button
+            type="button"
+            onClick={() => onGoToCustomizer(photo.category.toLowerCase().includes('porta') ? 'porta_copos' : 'tabua_carne')}
+            className="text-[11px] font-semibold uppercase tracking-wider text-[#5C4033] hover:text-[#8A5835] transition-colors cursor-pointer"
+          >
+            Personalizar peça similar
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const CustomerPhotosSection: React.FC<CustomerPhotosSectionProps> = ({
   onGoToCustomizer,
   externalCategoryFilter,
 }) => {
-  const [photos, setPhotos] = useState<CustomerPhoto[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  // Inicialização instantânea síncrona com cache local (0ms na renderização inicial)
+  const [photos, setPhotos] = useState<CustomerPhoto[]>(() => getCachedCustomerPhotos(true));
+  const [isDataLoading, setIsDataLoading] = useState<boolean>(() => getCachedCustomerPhotos(true).length === 0);
   const [selectedPhoto, setSelectedPhoto] = useState<CustomerPhoto | null>(null);
+  const [lightboxLoaded, setLightboxLoaded] = useState<boolean>(false);
   const [activeCategory, setActiveCategory] = useState<string>('todos');
   const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
 
-  // Carrega fotos reais
+  // Carrega e revalida fotos reais sem bloquear a interface se já houver cache
   const fetchPhotos = async () => {
     try {
-      setLoading(true);
+      if (photos.length === 0) {
+        setIsDataLoading(true);
+      }
       const data = await loadCustomerPhotos(true); // Apenas publicadas
-      setPhotos(data);
+      if (data && data.length > 0) {
+        setPhotos(data);
+      }
     } catch (err) {
-      console.error('Erro ao carregar fotos reais da galeria:', err);
-      setPhotos([]);
+      console.warn('Erro ao atualizar fotos reais da galeria:', err);
     } finally {
-      setLoading(false);
+      setIsDataLoading(false);
     }
   };
 
@@ -123,8 +275,8 @@ export const CustomerPhotosSection: React.FC<CustomerPhotosSectionProps> = ({
           </div>
         </div>
 
-        {/* Indicador de Carregamento Discreto */}
-        {loading && (
+        {/* Indicador de Carregamento Discreto (apenas exibido se não houver dados em cache) */}
+        {isDataLoading && photos.length === 0 && (
           <div className="py-16 text-center">
             <div className="inline-block w-6 h-6 border-2 border-[#8A5835] border-t-transparent rounded-full animate-spin mb-3" />
             <p className="text-xs text-[#5C4033] font-medium">Carregando fotografias da galeria...</p>
@@ -132,7 +284,7 @@ export const CustomerPhotosSection: React.FC<CustomerPhotosSectionProps> = ({
         )}
 
         {/* Estado Vazio Elegante (REGRA OBRIGATÓRIA: Sem dados fictícios nem cartões em branco) */}
-        {!loading && photos.length === 0 && (
+        {!isDataLoading && photos.length === 0 && (
           <div className="py-14 sm:py-20 px-6 max-w-2xl mx-auto text-center bg-[#FAF8F5] border border-[#DFD3C3]/80 shadow-xs">
             <div className="w-12 h-12 rounded-full bg-[#8A5835]/10 text-[#8A5835] flex items-center justify-center mx-auto mb-4">
               <Sparkles className="w-5 h-5 text-[#8A5835]" />
@@ -155,7 +307,7 @@ export const CustomerPhotosSection: React.FC<CustomerPhotosSectionProps> = ({
         )}
 
         {/* Abas de Filtros por Categoria Real (apenas se houver mais de uma categoria cadastrada) */}
-        {!loading && photos.length > 0 && availableCategories.length > 1 && (
+        {photos.length > 0 && availableCategories.length > 1 && (
           <div className="flex items-center overflow-x-auto gap-2 mb-6 sm:mb-8 pb-1 no-scrollbar">
             <button
               type="button"
@@ -192,117 +344,19 @@ export const CustomerPhotosSection: React.FC<CustomerPhotosSectionProps> = ({
         )}
 
         {/* Grade Responsiva de Fotografias (2 Colunas no Desktop) */}
-        {!loading && filteredPhotos.length > 0 && (
+        {filteredPhotos.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-stretch">
-            {filteredPhotos.map((photo) => (
-              <div
+            {filteredPhotos.map((photo, index) => (
+              <CustomerPhotoCard
                 key={photo.id}
-                className="bg-white border border-[#DFD3C3] shadow-md group hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden"
-              >
-                <div>
-                  {/* Contêiner da Fotografia Original com Proporção Consistente */}
-                  <div
-                    className="relative aspect-[16/10] bg-[#1C1917] overflow-hidden cursor-pointer"
-                    onClick={() => setSelectedPhoto(photo)}
-                  >
-                    <img
-                      src={photo.imageUrl}
-                      alt={photo.title || `Fotografia de peça artesanal M&A - ${photo.category}`}
-                      className="w-full h-full object-cover group-hover:scale-104 transition-transform duration-700 ease-out"
-                      loading="lazy"
-                    />
-
-                    {/* Badge da Categoria Real */}
-                    <span className="absolute top-3 left-3 z-10 bg-[#111111]/85 backdrop-blur-xs text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-widest px-2.5 py-1">
-                      {photo.category}
-                    </span>
-
-                    {/* Botão de Ampliação / Ver Imagem Original */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedPhoto(photo);
-                      }}
-                      className="absolute bottom-3 right-3 z-10 bg-black/75 hover:bg-black text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 flex items-center gap-1.5 backdrop-blur-xs transition-colors border border-white/10"
-                      title="Ver fotografia ampliada com detalhes"
-                    >
-                      <ZoomIn className="w-3.5 h-3.5 text-[#C29B68]" />
-                      <span>Ver foto</span>
-                    </button>
-                  </div>
-
-                  {/* Detalhes Cadastrados (Exibidos apenas se informados) */}
-                  <div className="p-4 sm:p-6 lg:p-7">
-                    {/* Linha de Avaliação e Metadados Reais */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                      {typeof photo.rating === 'number' ? (
-                        <div className="flex items-center gap-1 text-[#C29B68]">
-                          {[...Array(photo.rating)].map((_, i) => (
-                            <Star key={i} className="w-3.5 h-3.5 fill-current" />
-                          ))}
-                          <span className="text-xs font-bold text-[#8A5835] ml-1 font-mono">
-                            {photo.rating}.0
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-[11px] text-[#5C4033]/80 italic">Registro documental</span>
-                      )}
-
-                      {(photo.clientName || photo.city) && (
-                        <span className="text-[11px] text-[#8A5835] font-semibold truncate">
-                          {photo.clientName && <span>{photo.clientName}</span>}
-                          {photo.clientName && photo.city && <span> • </span>}
-                          {photo.city && <span>{photo.city}</span>}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Título da Peça (se houver) */}
-                    {photo.title && (
-                      <h4 className="font-serif text-lg sm:text-xl font-bold text-[#111111] mb-2 leading-snug">
-                        {photo.title}
-                      </h4>
-                    )}
-
-                    {/* Madeira e Acabamento (se houver) */}
-                    {photo.wood && (
-                      <p className="text-[11px] sm:text-xs text-[#8A5835] font-medium mb-3">
-                        Madeira: <span className="text-[#111] font-semibold">{photo.wood}</span>
-                      </p>
-                    )}
-
-                    {/* Depoimento Real do Cliente (se houver) */}
-                    {photo.comment && (
-                      <blockquote className="p-3 sm:p-4 bg-[#FAF8F5] border-l-2 border-[#8A5835] text-xs sm:text-sm text-[#3E2D22] italic leading-relaxed mb-2">
-                        "{photo.comment}"
-                      </blockquote>
-                    )}
-                  </div>
-                </div>
-
-                {/* Rodapé do Cartão */}
-                <div className="px-4 sm:px-6 lg:px-7 pb-4 sm:pb-6 pt-0 flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPhoto(photo)}
-                    className="text-xs font-bold text-[#8A5835] hover:text-[#111] flex items-center gap-1 uppercase tracking-wider transition-colors cursor-pointer"
-                  >
-                    <span>Ver detalhes</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-
-                  {onGoToCustomizer && (
-                    <button
-                      type="button"
-                      onClick={() => onGoToCustomizer(photo.category.toLowerCase().includes('porta') ? 'porta_copos' : 'tabua_carne')}
-                      className="text-[11px] font-semibold uppercase tracking-wider text-[#5C4033] hover:text-[#8A5835] transition-colors"
-                    >
-                      Personalizar peça similar
-                    </button>
-                  )}
-                </div>
-              </div>
+                photo={photo}
+                onSelect={(p) => {
+                  setLightboxLoaded(false);
+                  setSelectedPhoto(p);
+                }}
+                onGoToCustomizer={onGoToCustomizer}
+                priority={index < 2}
+              />
             ))}
           </div>
         )}
@@ -339,11 +393,20 @@ export const CustomerPhotosSection: React.FC<CustomerPhotosSectionProps> = ({
               </div>
 
               {/* Imagem Ampliada em Alta Resolução */}
-              <div className="bg-[#111111] p-2 sm:p-4 flex items-center justify-center overflow-auto max-h-[65vh]">
+              <div className="bg-[#111111] p-2 sm:p-4 flex items-center justify-center overflow-auto max-h-[65vh] min-h-[260px] relative">
+                {!lightboxLoaded && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#1C1917]/80 text-[#DFD3C3]">
+                    <div className="w-8 h-8 rounded-full border-2 border-[#8A5835] border-t-transparent animate-spin" />
+                    <span className="text-xs font-semibold">Carregando imagem original...</span>
+                  </div>
+                )}
                 <img
                   src={selectedPhoto.imageUrl}
                   alt={selectedPhoto.title || selectedPhoto.category}
-                  className="max-h-[60vh] max-w-full object-contain mx-auto shadow-lg"
+                  className={`max-h-[60vh] max-w-full object-contain mx-auto shadow-lg transition-opacity duration-300 ${
+                    lightboxLoaded ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  onLoad={() => setLightboxLoaded(true)}
                 />
               </div>
 

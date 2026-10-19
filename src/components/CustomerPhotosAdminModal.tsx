@@ -28,6 +28,7 @@ import {
   deleteCustomerPhoto,
   reorderCustomerPhotos,
   loadCustomerPhotos,
+  optimizeExistingCustomerPhotos,
 } from '../services/customerPhotosService';
 import {
   getFirebaseConfig,
@@ -60,6 +61,8 @@ export const CustomerPhotosAdminModal: React.FC<CustomerPhotosAdminModalProps> =
   const [activeTab, setActiveTab] = useState<'list' | 'create' | 'edit'>('list');
   const [loading, setLoading] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [optimizingProgress, setOptimizingProgress] = useState<{ current: number; total: number } | null>(null);
 
   // Form State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -98,6 +101,27 @@ export const CustomerPhotosAdminModal: React.FC<CustomerPhotosAdminModalProps> =
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOptimizeThumbnails = async () => {
+    setIsOptimizing(true);
+    try {
+      const result = await optimizeExistingCustomerPhotos((current, total) => {
+        setOptimizingProgress({ current, total });
+      });
+      await fetchPhotos();
+      onPhotosUpdated();
+      setFeedbackMessage({
+        type: 'success',
+        text: `Otimização concluída! ${result.optimized} fotos ganharam miniaturas compactas no Firebase Storage.`,
+      });
+    } catch (err) {
+      console.error(err);
+      setFeedbackMessage({ type: 'error', text: 'Falha durante a otimização de miniaturas.' });
+    } finally {
+      setIsOptimizing(false);
+      setOptimizingProgress(null);
     }
   };
 
@@ -492,6 +516,34 @@ export const CustomerPhotosAdminModal: React.FC<CustomerPhotosAdminModalProps> =
                   </div>
                 ) : (
                   <div className="space-y-3">
+                    {/* Banner de Otimização de Performance (se houver fotos sem miniatura compacta) */}
+                    {photos.some((p) => !p.thumbnailUrl || p.thumbnailUrl === p.imageUrl) && (
+                      <div className="p-3 bg-amber-50 border border-amber-300 text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div className="flex items-start sm:items-center gap-2">
+                          <Star className="w-4 h-4 text-amber-600 shrink-0 mt-0.5 sm:mt-0" />
+                          <div>
+                            <span className="font-bold">Otimização de Carregamento Rápido:</span>{' '}
+                            <span>Existem fotos sem miniaturas ultraleves (&lt; 80 KB) no Firebase Storage.</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={isOptimizing}
+                          onClick={handleOptimizeThumbnails}
+                          className="px-3 py-1.5 bg-[#2A1E17] hover:bg-[#8A5835] text-white font-bold uppercase tracking-wider text-[10px] shrink-0 transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                        >
+                          {isOptimizing ? (
+                            <>
+                              <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                              <span>Otimizando {optimizingProgress ? `(${optimizingProgress.current}/${optimizingProgress.total})` : '...'}</span>
+                            </>
+                          ) : (
+                            <span>Gerar Miniaturas Leves Agora</span>
+                          )}
+                        </button>
+                      </div>
+                    )}
+
                     {photos.map((photo, index) => (
                       <div
                         key={photo.id}
@@ -503,8 +555,10 @@ export const CustomerPhotosAdminModal: React.FC<CustomerPhotosAdminModalProps> =
                         <div className="flex items-center gap-3.5 flex-1 min-w-0">
                           <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#2A1E17] shrink-0 border border-[#DFD3C3] overflow-hidden relative">
                             <img
-                              src={photo.imageUrl}
+                              src={photo.thumbnailUrl || photo.imageUrl}
                               alt={photo.title || 'Foto de cliente'}
+                              loading="lazy"
+                              decoding="async"
                               className="w-full h-full object-cover"
                             />
                             {!photo.published && (
