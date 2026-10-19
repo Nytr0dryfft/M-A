@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layers, Combine, ShieldCheck, PenTool, Check, Info, X } from 'lucide-react';
+import { Info, X, Check } from 'lucide-react';
 
 export const AnatomySection: React.FC = () => {
   const [activePillar, setActivePillar] = useState<number | null>(null);
@@ -8,74 +8,73 @@ export const AnatomySection: React.FC = () => {
     {
       id: 1,
       num: '01',
-      title: 'Grão de Topo (End-Grain)',
+      title: 'Tábuas Personalizadas',
       description:
-        'As fibras de madeira ficam na vertical: a lâmina da faca desliza entre os anéis de crescimento sem cortá-los. O fio da faca se mantém afiado até 4x mais tempo e a madeira se autorregenera naturalmente ao longo do uso.',
-      badgeCategory: 'Benefício Gourmet',
-      badgeValue: 'Preserva o Fio & Auto-Cura',
+        'Peças utilitárias e gourmet de padrão superior, desenvolvidas com atenção minuciosa aos detalhes, acabamento refinado e possibilidade de personalização sob medida.',
+      badgeCategory: 'Alta Gastronomia & Uso Diário',
+      badgeValue: 'Personalização Exclusiva',
       deepDive:
-        'Diferente das tábuas comuns em edge-grain (fios horizontais cortados que soltam lascas e desgastam o fio de aço), a marchetaria end-grain da M&A agrupa centenas de blocos cúbicos posicionados verticalmente. Quando a faca atinge a superfície, as fibras apenas se afastam momentaneamente e retornam à posição com o banho mineral periódico.',
-      stats: 'Até 4x mais durabilidade do fio de facas damasco e alemãs.',
+        'Cada tábua é confeccionada a partir de pranchas nobres selecionadas, passando por rigoroso processo de calibração, colagem atóxica e acabamento sedoso. No configurador ou sob encomenda, o cliente define dimensões, canaletas, pegadores e gravações que tornam cada peça singular e duradoura.',
+      stats: 'Madeiras nobres certificadas, seladas com produtos atóxicos para corte e serviço.',
     },
     {
       id: 2,
       num: '02',
-      title: 'Encaixes Vivos & Mariposas',
+      title: 'Móveis de Autoria Própria',
       description:
-        'Travamentos mecânicos ancestrais (chaves borboleta "butterfly keys" e respigas de precisão) que permitem à madeira respirar e movimentar-se termicamente sem jamais trincar ou empenar ao longo das estações.',
-      badgeCategory: 'Engenharia Estrutural',
-      badgeValue: 'Zero Empenamento',
+        'Mobiliário autoral desenvolvido com identidade própria, criatividade e cuidado em cada etapa da execução, valorizando o desenho original e as formas da madeira.',
+      badgeCategory: 'Autoria & Design',
+      badgeValue: 'Criação Original',
       deepDive:
-        'A madeira sólida é um organismo vivo que responde à umidade relativa do ar. Nossos mestres entalham mariposas em madeiras de alta densidade (como Ébano e Jacarandá) nas fissuras naturais de pranchas vivas e usam respigas cegas japonesas que eliminam a necessidade de parafusos metálicos rígidos que causariam rachaduras estruturais.',
-      stats: 'Tolerância milimétrica de usinagem com encaixes manuais sem parafusos aparentes.',
+        'Nossos móveis nascem da busca pelo equilíbrio entre estética contemporânea e a força expressiva da madeira maciça. Cada banco, mesa ou peça de apoio é concebida com desenho próprio, respeitando os veios, as tonalidades naturais e a ergonomia, resultando em peças autênticas que marcam presença em qualquer ambiente.',
+      stats: 'Tiragens limitadas e projetos autorais com assinatura e autenticidade.',
     },
     {
       id: 3,
       num: '03',
-      title: 'Grau Culinário 100% Seguro',
+      title: 'Precisão na Marcenaria',
       description:
-        'Três demãos de banho quente em óleo mineral farmacêutico puro sem solventes químicos, seladas com cera virgem de abelha silvestre de apicultura orgânica. Hidrorrepelente natural certificado para contato alimentar.',
-      badgeCategory: 'Segurança Alimentar',
-      badgeValue: 'Atóxico & Antibacteriano',
+        'Usinagem milimétrica em CNC combinada a encaixes e travamentos executados com rigor técnico, garantindo encaixes perfeitos e estabilidade estrutural.',
+      badgeCategory: 'Engenharia Marceneira',
+      badgeValue: 'Rigor Técnico & CNC',
       deepDive:
-        'Jamais utilizamos vernizes sintéticos, poliuretanos ou óleos vegetais de cozinha (como soja ou azeite, que rançam e atraem bactérias). Nossa fórmula autoral combina Óleo Mineral USP com Cera de Abelha Apis Mellifera da Serra da Mantiqueira, criando uma barreira bacteriostática hidrofóbica que repele sangue e sucos de carne.',
-      stats: 'Em conformidade com normas sanitárias internacionais FDA para superfícies de corte.',
+        'Aliamos a tecnologia da fresadora CNC computadorizada ao conhecimento construtivo tradicional. Essa precisão milimétrica permite realizar rebaixos, perfis, encaixes de alta exatidão e gravações detalhadas, conferindo solidez estrutural e fidelidade geométrica a cada peça do ateliê.',
+      stats: 'Tolerância milimétrica na usinagem CNC integrada a encaixes tradicionais.',
     },
     {
       id: 4,
       num: '04',
-      title: 'Personalização Autoral',
+      title: 'Acabamento Artesanal',
       description:
-        'Usinagem de precisão milimétrica em CNC com brasão de família, monogramas, assinatura de chef ou logotipo institucional para presentes de alto impacto.',
-      badgeCategory: 'Exclusividade',
-      badgeValue: 'Usinagem CNC & Medidas',
+        'Trabalho manual minucioso que valoriza os veios naturais da madeira, a qualidade dos materiais e a durabilidade excepcional em cada detalhe final.',
+      badgeCategory: 'Toque & Longevidade',
+      badgeValue: 'Acabamento Nobre',
       deepDive:
-        'Seja para marcar a data de um casamento, o brasão da sua propriedade, assinatura de mestre-churrasqueiro ou lotes corporativos para diretorias e clientes VIP, executamos usinagem milimétrica computadorizada CNC na própria madeira maciça, acompanhado de certificado de autenticidade e procedência.',
-      stats: 'Usinagem em fresa de precisão CNC com profundidade milimétrica calibrada.',
+        'A etapa de finalização é inteiramente manual: lixamento progressivo em múltiplas granulações, selagem criteriosa com óleos minerais puros e cera natural de abelha silvestre. Esse processo nutre as fibras, repele umidade sem criar filmes plásticos e assegura um toque aveludado e resistência para atravessar anos.',
+      stats: 'Selagem atóxica que nutre a madeira, preserva o toque orgânico e facilita a manutenção.',
     },
   ];
 
   return (
     <section className="py-10 sm:py-20 lg:py-28 2xl:py-36 max-w-[1560px] mx-auto px-4 sm:px-8 lg:px-14 xl:px-16 2xl:px-20 bg-[#FCF9F3] border-t border-[#DFD3C3]/60" id="anatomia">
-      <div className="max-w-4xl 2xl:max-w-5xl mb-8 sm:mb-14 lg:mb-16">
+      <div className="max-w-5xl 2xl:max-w-6xl mb-8 sm:mb-14 lg:mb-16">
         <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
           <span className="w-8 h-[2px] bg-[#8A5835]" />
           <span className="text-[11px] sm:text-xs uppercase tracking-[0.25em] text-[#8A5835] font-bold">
             Rigor Marceneiro
           </span>
         </div>
-        <h2 className="font-serif text-2xl sm:text-4xl 2xl:text-5xl text-[#111111] font-bold tracking-tight inline-flex items-baseline gap-1.5 flex-wrap">
-          <span>Anatomia de uma Obra</span>
-          <span className="inline-flex items-baseline font-serif">
+        <h2 className="font-serif text-2xl sm:text-3xl lg:text-[2.1rem] xl:text-4xl 2xl:text-5xl text-[#111111] font-bold tracking-tight flex flex-wrap lg:flex-nowrap items-baseline gap-x-2 gap-y-1 lg:whitespace-nowrap">
+          <span className="whitespace-nowrap">Anatomia de uma Obra</span>
+          <span className="inline-flex items-baseline font-serif whitespace-nowrap">
             <span>M</span>
             <span className="text-[0.62em] font-medium text-[#8A5835] mx-[1.5px] -translate-y-[1px]">&amp;</span>
             <span>A</span>
           </span>
-          <span>: 4 Pilares de Excelência</span>
+          <span className="whitespace-nowrap">: 4 Pilares de Excelência</span>
         </h2>
-        <p className="text-xs sm:text-base 2xl:text-lg text-[#5C4033] mt-2 sm:mt-3 leading-relaxed">
-          Por que uma peça esculpida em marcenaria autoral atravessa décadas intacta enquanto tábuas
-          comuns empenam e perdem a vida.
+        <p className="text-xs sm:text-base 2xl:text-lg text-[#5C4033] mt-2 sm:mt-3 leading-relaxed max-w-3xl">
+          Como unimos design autoral, rigor na usinagem CNC e acabamento artesanal para criar tábuas personalizadas e móveis exclusivos que atravessam gerações.
         </p>
       </div>
 

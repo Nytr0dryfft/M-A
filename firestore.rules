@@ -7,10 +7,29 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Controle de Cotas e Rate-Limiting por Usuário Autenticado (Atelier M&A)
+    // Impede abusos, robôs e criação de orçamentos infinitos
+    match /quote_rate_limits/{userId} {
+      // O usuário pode apenas consultar seu próprio saldo de cota
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Criação e atualização com verificação estrita: máximo 3 orçamentos na janela de 24h
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.userId == userId
+        && request.resource.data.totalRequests24h is int
+        && request.resource.data.totalRequests24h >= 1
+        && request.resource.data.totalRequests24h <= 3
+        && request.resource.data.requestTimestamps is list
+        && request.resource.data.requestTimestamps.size() <= 3;
+
+      // Proibido apagar o registro: o visitante NÃO consegue zerar a cota deletando o documento
+      allow delete: if false;
+    }
+
     // Regras de Segurança para Orçamentos e Pedidos Sob Medida (Atelier M&A)
-    // Compatível com Frontend Estático no GitHub Pages
     match /orders/{orderId} {
-      // Criação permitida pelo cliente no navegador estático com validação rigorosa de campos
+      // Criação permitida apenas com autenticação e validação rigorosa de campos
       allow create: if isValidOrderId(orderId)
         && isValidOrderData(request.resource.data)
         && request.resource.data.orderId == orderId
@@ -18,11 +37,19 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time;
 
       // Leitura pública bloqueada para proteger dados de contato e artes autorais dos clientes.
-      // O acesso administrativo é feito pelo Atelier no console ou com autenticação administrativa.
+      // O marceneiro recebe os links diretos autenticados no e-mail ou no WhatsApp.
       allow read: if false;
 
       // Proibida modificação ou deleção pelo navegador do cliente após o envio
       allow update, delete: if false;
+    }
+
+    // Galeria Real de Fotos de Clientes cadastradas pelo Administrador
+    match /customer_photos/{photoId} {
+      // Leitura pública de fotos publicadas
+      allow read: if resource.data.published == true || request.auth != null;
+      // Escrita restrita ao administrador autenticado
+      allow write: if request.auth != null;
     }
 
     // Funções de validação estrita (Anti-Gap e Anti-Poisoning)

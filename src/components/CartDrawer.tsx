@@ -200,8 +200,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   R$ {subtotal.toFixed(2).replace('.', ',')}
                 </span>
               </div>
-              <p className="text-[10px] text-[#5C4033] leading-relaxed">
-                Frete calculado com transportadora especializada para segurança de pranchas vivas e peças maciças.
+              <p className="text-[11px] text-[#5C4033] leading-relaxed">
+                O valor do frete é calculado à parte.
               </p>
 
               <a

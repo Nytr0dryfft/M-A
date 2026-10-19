@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Check, Droplets } from 'lucide-react';
+import { Sparkles, Check, Droplets, Ruler } from 'lucide-react';
 import { ATELIER_WOODS_LIST } from '../data/woods';
 
 interface WoodCuratorProps {
@@ -74,9 +74,13 @@ export const WoodCurator: React.FC<WoodCuratorProps> = ({
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />
-                      <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 bg-[#111111]/90 backdrop-blur-xs text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 max-w-[90%] truncate flex items-center gap-1">
-                        <Droplets className="w-2.5 h-2.5 text-white shrink-0" aria-hidden="true" />
-                        <span className="truncate">{wood.treatment}</span>
+                      {/* Ícone discreto e elegante da gotinha de resina (sem texto sobreposto à madeira) */}
+                      <span
+                        className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 bg-[#FAF8F5]/90 backdrop-blur-xs text-[#8A5835] p-1 sm:p-1.5 border border-[#DFD3C3]/80 shadow-xs flex items-center justify-center pointer-events-none"
+                        title="Tratamento em Resina"
+                        aria-label="Tratamento em Resina"
+                      >
+                        <Droplets className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#8A5835]" aria-hidden="true" />
                       </span>
                     </div>
 
@@ -144,7 +148,7 @@ export const WoodCurator: React.FC<WoodCuratorProps> = ({
               onClick={() => onSelectWoodForCustom(selectedWood.name)}
               className="w-full sm:w-auto px-5 sm:px-6 py-3 sm:py-3.5 bg-[#2A1E17] hover:bg-[#8A5835] text-white text-xs font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md shrink-0"
             >
-              <Sparkles className="w-4 h-4" />
+              <Ruler className="w-4 h-4 shrink-0" />
               <span>Configurar Peça em {selectedWood.name}</span>
             </button>
           </div>

@@ -7,6 +7,7 @@ import { CatalogSection } from './components/CatalogSection';
 import { AnatomySection } from './components/AnatomySection';
 import { WoodCurator } from './components/WoodCurator';
 import { CustomOrderStudio } from './components/CustomOrderStudio';
+import { CustomerPhotosSection } from './components/CustomerPhotosSection';
 import { TestimonialsSection } from './components/TestimonialsSection';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { CartDrawer } from './components/CartDrawer';
@@ -98,8 +99,15 @@ export default function App() {
     showToast(`Madeira ${woodName} selecionada para o seu projeto sob medida.`);
   };
 
-  const handleOpenCustomStudio = (pieceType: 'tabua_carne' | 'porta_copos' = 'tabua_carne') => {
-    setCustomPieceType(pieceType);
+  const handleOpenCustomStudio = (pieceType: 'tabua_carne' | 'porta_copos' | 'movel' = 'tabua_carne') => {
+    if (pieceType === 'movel') {
+      const element = document.getElementById('moveis');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+    }
+    setCustomPieceType(pieceType === 'porta_copos' ? 'porta_copos' : 'tabua_carne');
     const element = document.getElementById('encomenda');
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
@@ -151,7 +159,12 @@ export default function App() {
           onSuccessOrder={(summary) => showToast(summary || 'Orçamento registrado com sucesso!')}
         />
 
-        {/* 2.6 Testimonials & Recognition */}
+        {/* 2.6 Fotos de Clientes (Galeria Documental Exclusiva de Peças Reais) */}
+        <CustomerPhotosSection
+          onGoToCustomizer={handleOpenCustomStudio}
+        />
+
+        {/* 2.7 Testimonials & Recognition */}
         <TestimonialsSection />
       </main>
 

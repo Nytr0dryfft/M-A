@@ -13,8 +13,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onClose,
   onAddToCart,
 }) => {
-  if (!product) return null;
-
   const [enableLaser, setEnableLaser] = useState(false);
   const [engravingText, setEngravingText] = useState('M&A · MASTER CHEF');
   const [selectedAddon, setSelectedAddon] = useState<string>('cera_extra');
@@ -22,6 +20,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [showImagePreview, setShowImagePreview] = useState(false);
 
   const handleAdd = () => {
+    if (!product) return;
     onAddToCart(product, enableLaser ? engravingText : undefined);
     setAdded(true);
     setTimeout(() => {
@@ -29,6 +28,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       onClose();
     }, 1200);
   };
+
+  if (!product) return null;
 
   return (
     <>

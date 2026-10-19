@@ -2,27 +2,42 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Bloqueio padrão para caminhos não autorizados
+    // Bloqueio padrão para todas as pastas e caminhos não autorizados
     match /{allPaths=**} {
       allow read, write: if false;
     }
 
-    // Pasta segura de pedidos do Atelier (/orders/{orderId}/{fileName})
+    // Pasta isolada de cada pedido: /orders/{orderId}/{fileName}
     match /orders/{orderId}/{fileName} {
-      // Leitura permitida para download via links seguros no WhatsApp pelo atelier e pelo cliente
-      allow read: if true;
+      // 1. Proíbe expressamente a listagem de arquivos da pasta.
+      // Nenhum visitante consegue navegar, explorar ou descobrir os arquivos de outros pedidos.
+      allow list: if false;
 
-      // Criação de novos arquivos restrita a formatos de imagem/vetor seguros e tamanho máximo de 15MB
+      // 2. Leitura permitida apenas para download direto do arquivo através da sua URL com token
+      // de acesso (utilizado pelo marceneiro para abrir os links recebidos no e-mail).
+      allow get: if true;
+
+      // 3. Criação de novos arquivos estritamente restrita a:
+      // - Tamanho máximo de 15 MB por arquivo
+      // - Tipos de arquivo estritamente verificados: imagens (PNG/JPEG/WEBP), vetores SVG ou relatórios JSON
       allow create: if request.resource.size < 15 * 1024 * 1024
         && (
           request.resource.contentType.matches('image/.*')
           || request.resource.contentType == 'image/svg+xml'
-        )
-        && fileName.size() <= 128
-        && orderId.size() <= 40;
+          || request.resource.contentType == 'application/json'
+        );
 
-      // Proibido sobrescrever ou deletar arquivos existentes através do cliente web
+      // 4. Bloqueio permanente de alterações e exclusões via cliente web
+      // Garante que uma arte ou ficha CNC já enviada não possa ser sobrescrita ou apagada.
       allow update, delete: if false;
+    }
+
+    // Galeria de fotografias de clientes do Ateliê:
+    // - Leitura pública para exibição na página inicial e no catálogo
+    // - Escrita bloqueada para visitantes comuns (protegida contra uploads não autorizados)
+    match /customer_photos/{fileName} {
+      allow read: if true;
+      allow write: if false;
     }
   }
 }

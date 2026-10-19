@@ -108,6 +108,61 @@ export interface BudgetBreakdown {
 }
 
 
+export interface ElementPlacementSpec {
+  elementIndex: number;
+  id: string;
+  type: 'image' | 'text';
+  label: string;
+  sourceFileName?: string | null;
+  textContent?: string | null;
+  fontFamily?: string | null;
+  isBold?: boolean;
+  isItalic?: boolean;
+  // Posicionamento percentual relativo à tábua (0 a 100%, 50% = centro)
+  positionPercent: {
+    x: number;
+    y: number;
+  };
+  // Coordenadas físicas calculadas no sistema da tábua
+  physicalPositionCm: {
+    centerXCm: number;
+    centerYCm: number;
+    leftCm: number;
+    topCm: number;
+    unit: 'cm';
+  };
+  // Dimensões físicas reais
+  dimensionsCm: {
+    widthCm: number;
+    heightCm: number;
+    unit: 'cm';
+  };
+  rotationDeg: number;
+  zIndex: number;
+  isSvg: boolean;
+}
+
+export interface BoardPlacementReport {
+  orderId: string;
+  createdAt: string;
+  pieceType: ProductPieceType;
+  pieceLabel: string;
+  woodName: string;
+  boardDimensions: {
+    lengthCm: number;
+    widthCm: number;
+    thicknessCm: number;
+    unit: 'cm';
+  };
+  coordinateSystem: {
+    unit: 'cm';
+    referenceOrigin: string;
+    description: string;
+  };
+  elementsCount: number;
+  elements: ElementPlacementSpec[];
+}
+
 export interface OrderQuoteData {
   orderId: string;
   createdAt: string;
@@ -132,4 +187,5 @@ export interface OrderQuoteData {
   notes: string;
   imageRightsConfirmed: boolean;
   previewDataUrl?: string;
+  placementReport?: BoardPlacementReport;
 }

@@ -7,6 +7,7 @@ import {
 } from '../../types/configurator';
 import { getWoodById } from '../../data/woods';
 import { getAssetUrl } from '../../utils/assets';
+import { generateBoardSnapshot } from '../../utils/boardSnapshotGenerator';
 import {
   AlertTriangle,
   Copy,
@@ -476,26 +477,34 @@ export const InteractiveBoardCanvas: React.FC<InteractiveBoardCanvasProps> = ({
   };
 
   // Gera snapshot de alta qualidade em PNG para a prévia da encomenda (SEM caixas de seleção)
-  const generateSnapshot = useCallback(() => {
+  const generateSnapshot = useCallback(async () => {
     if (!onSnapshotReady || !boardRef.current) return;
 
     try {
-      const exportCanvas = document.createElement('canvas');
-      exportCanvas.width = basePixelWidth * 2;
-      exportCanvas.height = basePixelHeight * 2;
-      const ctx = exportCanvas.getContext('2d');
-      if (!ctx) return;
-
-      // Desenha fundo da madeira
-      ctx.fillStyle = woodTheme.baseColor;
-      ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-
-      const url = exportCanvas.toDataURL('image/png');
-      onSnapshotReady(url);
+      const snapshot = await generateBoardSnapshot({
+        pieceType,
+        lengthCm,
+        widthCm,
+        thicknessCm,
+        woodType,
+        isResin,
+        elements,
+        targetWidth: 1000,
+      });
+      onSnapshotReady(snapshot.dataUrl);
     } catch {
       // Ignora falhas menores de snapshot cross-origin
     }
-  }, [basePixelWidth, basePixelHeight, woodTheme.baseColor, onSnapshotReady]);
+  }, [
+    pieceType,
+    lengthCm,
+    widthCm,
+    thicknessCm,
+    woodType,
+    isResin,
+    elements,
+    onSnapshotReady,
+  ]);
 
   useEffect(() => {
     const timer = setTimeout(generateSnapshot, 600);

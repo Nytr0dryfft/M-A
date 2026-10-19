@@ -22,6 +22,8 @@ import {
   ShieldAlert,
   HelpCircle,
   FolderOpen,
+  FileCode,
+  RefreshCw,
 } from 'lucide-react';
 import {
   ProductPieceType,
@@ -48,8 +50,8 @@ import { VectorizeModal } from './configurator/VectorizeModal';
 const CNC_TECHNIQUES: CncTechniqueOption[] = [
   {
     id: 'baixo_relevo_resina',
-    name: 'Baixo-Relevo CNC com Resina Epóxi Atóxica',
-    shortDesc: 'Usinagem de precisão CNC com preenchimento em resina epóxi atóxica polida à mão',
+    name: 'Rebaixo com relevo de resina',
+    shortDesc: 'Trabalhamos com até duas cores de resina na mesma peça.',
     badge: 'Padrão do Atelier · Impermeável',
     priceModifier: 15.0,
     applicableTo: ['tabua_carne', 'porta_copos'],
@@ -91,17 +93,17 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
   const isCuttingBoard = pieceType === 'tabua_carne';
   const isPortaCopos = pieceType === 'porta_copos';
 
-  // Espessura rigorosa da engenharia do atelier (cm)
-  const thicknessCm = isCuttingBoard ? 3.5 : 1.0;
-
-  // Dimensões físicas em cm
+  // Dimensões físicas em cm (Engenharia Autoral M&A)
   const minLength = isCuttingBoard ? 35 : 9;
   const maxLength = isCuttingBoard ? 50 : 12;
   const minWidth = isCuttingBoard ? 20 : 9;
   const maxWidth = isCuttingBoard ? 29 : 12;
+  const minThickness = isCuttingBoard ? 2.0 : 1.0;
+  const maxThickness = 3.5; // Espessura máxima estrita permitida: 3,5 cm
 
   const [lengthCm, setLengthCm] = useState<number>(isCuttingBoard ? 40 : 10);
   const [widthCm, setWidthCm] = useState<number>(isCuttingBoard ? 29 : 10);
+  const [thicknessCm, setThicknessCm] = useState<number>(isCuttingBoard ? 3.5 : 1.0);
   const [woodType, setWoodType] = useState<string>(initialWood);
   const [techniqueId, setTechniqueId] = useState<CncTechniqueId>('baixo_relevo_resina');
   const [finishId, setFinishId] = useState<FinishId>('oleo_cera');
@@ -132,6 +134,7 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
   const [snapshotUrl, setSnapshotUrl] = useState<string>('');
   const [pendingUploadForVectorize, setPendingUploadForVectorize] = useState<ImageUploadResult | null>(null);
   const [isVectorizeModalOpen, setIsVectorizeModalOpen] = useState<boolean>(false);
+  const [replacingElementId, setReplacingElementId] = useState<string | null>(null);
 
   // Sincronização inicial de props
   useEffect(() => {
@@ -157,6 +160,12 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
           setElements(parsed.elements);
           if (parsed.lengthCm) setLengthCm(parsed.lengthCm);
           if (parsed.widthCm) setWidthCm(parsed.widthCm);
+          if (parsed.thicknessCm) {
+            const parsedThick = parseFloat(parsed.thicknessCm);
+            if (!isNaN(parsedThick) && parsedThick >= 1.0 && parsedThick <= 3.5) {
+              setThicknessCm(+parsedThick.toFixed(1));
+            }
+          }
           if (parsed.woodType) setWoodType(parsed.woodType);
           if (parsed.pieceType) setPieceType(parsed.pieceType);
         }
@@ -173,6 +182,7 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
         elements,
         lengthCm,
         widthCm,
+        thicknessCm,
         woodType,
         pieceType,
         techniqueId,
@@ -181,7 +191,7 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
     } catch {
       // Ignora
     }
-  }, [elements, lengthCm, widthCm, woodType, pieceType, techniqueId]);
+  }, [elements, lengthCm, widthCm, thicknessCm, woodType, pieceType, techniqueId]);
 
   // Registra alteração no histórico para Undo/Redo
   const pushHistory = useCallback(
@@ -218,12 +228,14 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
     if (newType === 'tabua_carne') {
       setLengthCm((prev) => (prev >= 35 && prev <= 50 ? prev : 40));
       setWidthCm((prev) => (prev >= 20 && prev <= 29 ? prev : 29));
+      setThicknessCm((prev) => (prev >= 2.0 && prev <= 3.5 ? prev : 3.5));
       if (woodType.toLowerCase().includes('cedr')) {
         setWoodType('Pinus');
       }
     } else {
       setLengthCm((prev) => (prev >= 9 && prev <= 12 ? prev : 10));
       setWidthCm((prev) => (prev >= 9 && prev <= 12 ? prev : 10));
+      setThicknessCm((prev) => (prev >= 1.0 && prev <= 3.5 ? Math.min(1.5, prev) : 1.0));
     }
   };
 
@@ -298,6 +310,34 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
         const aspect = result.width / result.height || 1;
         const dims = calculateInitialImageDimensions(aspect);
 
+        if (replacingElementId) {
+          const target = elements.find((el) => el.id === replacingElementId);
+          if (target) {
+            const updatedEl: CanvasElement = {
+              ...target,
+              aspectRatio: aspect,
+              widthCm: dims.widthCm,
+              heightCm: dims.heightCm,
+              imageSrc: result.dataUrl,
+              imageFileName: result.fileName,
+              imageFileType: result.fileType,
+              imageFileSize: result.fileSize,
+              naturalWidth: result.width,
+              naturalHeight: result.height,
+              isSvg: true,
+              isVectorized: false,
+              hasAlpha: true,
+              rawSvgText: result.rawSvgString,
+              sanitizedSvgText: result.sanitizedSvgString,
+            };
+            const updated = elements.map((el) => (el.id === replacingElementId ? updatedEl : el));
+            pushHistory(updated);
+            setSelectedElementId(updatedEl.id);
+            setReplacingElementId(null);
+            return;
+          }
+        }
+
         const newElement: CanvasElement = {
           id: `el-svg-${Date.now()}`,
           type: 'image',
@@ -324,6 +364,7 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
         const updated = [...elements, newElement];
         pushHistory(updated);
         setSelectedElementId(newElement.id);
+        setReplacingElementId(null);
         return;
       }
 
@@ -681,12 +722,16 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
     const totalEstimated = Math.max(149.9, Math.min(229.9, +rawTotal.toFixed(2)));
 
     const items = [
-      { label: 'Tábua de Carne Maciça (Base)', description: '35x20x3,5 cm com canaleta profunda', value: basePrice },
+      {
+        label: 'Tábua de Carne Maciça (Base)',
+        description: `35x20x${thicknessCm.toFixed(1).replace('.', ',')} cm com canaleta profunda`,
+        value: basePrice,
+      },
       ...(dimensionsAddon > 0
         ? [
             {
-              label: `Dimensões Sob Medida (${lengthCm}x${widthCm} cm)`,
-              description: 'Área ampliada de corte',
+              label: `Dimensões Sob Medida (${lengthCm}x${widthCm}x${thicknessCm.toFixed(1).replace('.', ',')} cm)`,
+              description: 'Volume personalizado de madeira maciça',
               value: dimensionsAddon,
             },
           ]
@@ -722,6 +767,7 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
     isPortaCopos,
     lengthCm,
     widthCm,
+    thicknessCm,
     woodType,
     currentTechnique,
     currentFinish,
@@ -740,7 +786,7 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
       dimensions: {
         lengthCm,
         widthCm,
-        thicknessCm,
+        thicknessCm: Math.min(3.5, Math.max(minThickness, thicknessCm)),
       },
       technique: currentTechnique,
       finish: currentFinish,
@@ -762,6 +808,7 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
     lengthCm,
     widthCm,
     thicknessCm,
+    minThickness,
     currentTechnique,
     currentFinish,
     elements,
@@ -773,7 +820,7 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
   const handleOrderConfirmed = (finalOrder: OrderQuoteData) => {
     if (onSuccessOrder) {
       onSuccessOrder(
-        `Orçamento Solicitado (${finalOrder.orderId}): ${finalOrder.pieceLabel} em ${finalOrder.woodName} (${finalOrder.dimensions.lengthCm}x${finalOrder.dimensions.widthCm}cm). Total estimado: R$ ${finalOrder.budget.totalEstimated.toFixed(2).replace('.', ',')}`
+        `Orçamento Solicitado (${finalOrder.orderId}): ${finalOrder.pieceLabel} em ${finalOrder.woodName} (${finalOrder.dimensions.lengthCm}x${finalOrder.dimensions.widthCm}x${finalOrder.dimensions.thicknessCm.toFixed(1).replace('.', ',')}cm). Total estimado: R$ ${finalOrder.budget.totalEstimated.toFixed(2).replace('.', ',')}`
       );
     }
     // Prepara novo identificador único para o próximo projeto autoral
@@ -880,107 +927,134 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
             <div className="p-4 sm:p-5 bg-[#FAF8F5] text-[#111111] border border-[#DFD3C3] shadow-md space-y-4">
               <div className="flex items-center justify-between border-b border-[#DFD3C3]/80 pb-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#8A5835] flex items-center gap-1.5">
-                    <TreePine className="w-3.5 h-3.5" />
-                    <span>Madeira do Atelier</span>
-                  </span>
-                  <span className="text-[11px] font-mono font-bold text-[#111]">
-                    Espessura: {thicknessCm.toFixed(1).replace('.', ',')} cm
-                  </span>
-                </div>
+                  <TreePine className="w-3.5 h-3.5" />
+                  <span>Madeira do Atelier</span>
+                </span>
+                <span className="text-[11px] font-mono font-semibold text-[#5C4033]">
+                  Usinagem CNC
+                </span>
+              </div>
 
-                {/* Seleção de Espécies de Madeira */}
-                <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
-                  {availableWoods.map((wood) => {
-                    const isSelected = woodType.toLowerCase() === wood.name.toLowerCase();
-                    return (
-                      <button
-                        key={wood.id}
-                        type="button"
-                        onClick={() => setWoodType(wood.name)}
-                        className={`p-2 sm:p-2.5 border text-left transition-all cursor-pointer flex items-center gap-2.5 ${
-                          isSelected
-                            ? 'border-[#8A5835] bg-[#FAF3EA] ring-1 ring-[#8A5835]'
-                            : 'border-[#DFD3C3] bg-white hover:border-[#8A5835]/50'
-                        }`}
-                      >
-                        <div
-                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-xs shrink-0 border border-black/20 shadow-xs"
-                          style={{
-                            backgroundColor: wood.baseColor,
-                            backgroundImage: `url("${wood.textureUrl}")`,
-                            backgroundSize: 'cover',
-                          }}
-                        />
-                        <div className="min-w-0">
-                          <span className="font-serif font-bold text-xs block text-[#111] truncate">
-                            {wood.name}
-                          </span>
-                          <span className="text-[10px] text-[#8A5835] block truncate">
-                            {wood.treatment}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+              {/* Seleção de Espécies de Madeira */}
+              <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
+                {availableWoods.map((wood) => {
+                  const isSelected = woodType.toLowerCase() === wood.name.toLowerCase();
+                  return (
+                    <button
+                      key={wood.id}
+                      type="button"
+                      onClick={() => setWoodType(wood.name)}
+                      className={`p-2 sm:p-2.5 border text-left transition-all cursor-pointer flex items-center gap-2.5 ${
+                        isSelected
+                          ? 'border-[#8A5835] bg-[#FAF3EA] ring-1 ring-[#8A5835]'
+                          : 'border-[#DFD3C3] bg-white hover:border-[#8A5835]/50'
+                      }`}
+                    >
+                      <div
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-xs shrink-0 border border-black/20 shadow-xs"
+                        style={{
+                          backgroundColor: wood.baseColor,
+                          backgroundImage: `url("${wood.textureUrl}")`,
+                          backgroundSize: 'cover',
+                        }}
+                      />
+                      <div className="min-w-0">
+                        <span className="font-serif font-bold text-xs block text-[#111] truncate">
+                          {wood.name}
+                        </span>
+                        <span className="text-[10px] text-[#8A5835] block truncate">
+                          {wood.treatment}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
 
-                {/* Controles Dimensionais */}
-                <div className="space-y-3 pt-2 border-t border-[#DFD3C3]/60 text-xs">
-                  <div>
-                    <div className="flex justify-between items-center mb-1 text-[#3E2D22]">
-                      <span className="font-bold">Comprimento: {lengthCm} cm</span>
-                      <span className="font-mono text-[10px] text-[#8A5835]">
-                        ({minLength} a {maxLength} cm)
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min={minLength}
-                      max={maxLength}
-                      value={lengthCm}
-                      onChange={(e) => setLengthCm(parseInt(e.target.value))}
-                      className="w-full accent-[#8A5835] cursor-pointer"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-1 text-[#3E2D22]">
-                      <span className="font-bold">Largura: {widthCm} cm</span>
-                      <span className="font-mono text-[10px] text-[#8A5835]">
-                        ({minWidth} a {maxWidth} cm)
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min={minWidth}
-                      max={maxWidth}
-                      value={widthCm}
-                      onChange={(e) => setWidthCm(parseInt(e.target.value))}
-                      className="w-full accent-[#8A5835] cursor-pointer"
-                    />
-                  </div>
-                </div>
-
-                {/* Técnica de Usinagem */}
-                <div className="pt-2 border-t border-[#DFD3C3]/60 space-y-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#8A5835] block">
-                    Técnica de Usinagem
-                  </span>
-                  <div className="p-2.5 border-2 border-[#8A5835] bg-[#FAF3EA] text-xs shadow-xs">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold text-[#1C1917]">
-                        Baixo-Relevo CNC com Resina Epóxi Atóxica
-                      </span>
-                      <span className="text-[9px] uppercase tracking-wider font-bold text-[#8A5835] bg-[#8A5835]/10 px-2 py-0.5 border border-[#8A5835]/30 shrink-0">
-                        Padrão do Atelier
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-[#5C4033] block leading-tight mt-1.5">
-                      Usinagem profunda com preenchimento em resina culinária atóxica polida à mão. Acabamento impermeável de alto padrão em todas as peças.
+              {/* Controles Dimensionais */}
+              <div className="space-y-3 pt-2 border-t border-[#DFD3C3]/60 text-xs">
+                <div>
+                  <div className="flex justify-between items-center mb-1 text-[#3E2D22]">
+                    <span className="font-bold">Comprimento: {lengthCm} cm</span>
+                    <span className="font-mono text-[10px] text-[#8A5835]">
+                      ({minLength} a {maxLength} cm)
                     </span>
                   </div>
+                  <input
+                    type="range"
+                    min={minLength}
+                    max={maxLength}
+                    value={lengthCm}
+                    onChange={(e) => setLengthCm(parseInt(e.target.value))}
+                    className="w-full accent-[#8A5835] cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1 text-[#3E2D22]">
+                    <span className="font-bold">Largura: {widthCm} cm</span>
+                    <span className="font-mono text-[10px] text-[#8A5835]">
+                      ({minWidth} a {maxWidth} cm)
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={minWidth}
+                    max={maxWidth}
+                    value={widthCm}
+                    onChange={(e) => setWidthCm(parseInt(e.target.value))}
+                    className="w-full accent-[#8A5835] cursor-pointer"
+                  />
+                </div>
+
+                {/* Barra de Seleção Horizontal de Espessura (Posicionada imediatamente abaixo da largura) */}
+                <div>
+                  <div className="flex justify-between items-center mb-1 text-[#3E2D22]">
+                    <span className="font-bold">
+                      Espessura: {thicknessCm.toFixed(1).replace('.', ',')} cm
+                    </span>
+                    <span className="font-mono text-[10px] text-[#8A5835]">
+                      ({minThickness.toFixed(1).replace('.', ',')} a {maxThickness.toFixed(1).replace('.', ',')} cm)
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={minThickness}
+                    max={maxThickness}
+                    step={0.1}
+                    value={thicknessCm}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      // Validação estrita: impede qualquer valor acima de 3,5 cm
+                      const safeVal = Math.min(3.5, Math.max(minThickness, val));
+                      setThicknessCm(+safeVal.toFixed(1));
+                    }}
+                    className="w-full accent-[#8A5835] cursor-pointer"
+                    aria-label="Espessura da peça em centímetros"
+                  />
                 </div>
               </div>
+
+              {/* Técnica de Usinagem */}
+              <div className="pt-2 border-t border-[#DFD3C3]/60 space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#8A5835] block">
+                  Técnica de Usinagem
+                </span>
+                <div className="p-2.5 border-2 border-[#8A5835] bg-[#FAF3EA] text-xs shadow-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-[#1C1917]">
+                      Rebaixo com relevo de resina
+                    </span>
+                    <span className="text-[9px] uppercase tracking-wider font-bold text-[#8A5835] bg-[#8A5835]/10 px-2 py-0.5 border border-[#8A5835]/30 shrink-0">
+                      Padrão do Atelier
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-[#5C4033] block leading-tight mt-1.5">
+                    Trabalhamos com até duas cores de resina na mesma peça.
+                  </span>
+                </div>
+              </div>
+            </div>
 
             {/* Bloco 2: A Única Opção Principal de Arte & Textos Personalizados */}
             <div className="p-4 sm:p-5 bg-[#FAF8F5] text-[#111111] border border-[#DFD3C3] shadow-md space-y-4">
@@ -1030,6 +1104,73 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
                   <div className="p-2.5 bg-red-100 border border-red-300 text-red-800 text-[11px] flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span>{uploadError}</span>
+                  </div>
+                )}
+
+                {/* Lista de Arquivos de Arte Selecionados (com Exibição de Nome, Substituição e Remoção) */}
+                {elements.filter((el) => el.type === 'image').length > 0 && (
+                  <div className="space-y-2 pt-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A5835] block">
+                      Arte Selecionada ({elements.filter((el) => el.type === 'image').length})
+                    </span>
+
+                    {elements
+                      .filter((el) => el.type === 'image')
+                      .map((el) => (
+                        <div
+                          key={el.id}
+                          className="p-3 bg-[#FAF8F5] border border-[#C29B68]/60 shadow-xs space-y-2 text-xs"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <FileCode className="w-4 h-4 text-[#8A5835] shrink-0" />
+                              <div className="min-w-0">
+                                <span className="font-bold text-xs text-[#111] truncate block" title={el.imageFileName}>
+                                  {el.imageFileName || 'arte-personalizada.svg'}
+                                </span>
+                                <span className="text-[10px] text-[#5C4033] block">
+                                  {el.isSvg ? 'Vetor SVG Original (CNC)' : 'Arte Gráfica CNC'} • {el.widthCm}×{el.heightCm} cm
+                                </span>
+                              </div>
+                            </div>
+
+                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 bg-[#8A5835]/15 text-[#8A5835] border border-[#8A5835]/30 shrink-0">
+                              {el.isSvg ? 'SVG Original' : 'Gráfico'}
+                            </span>
+                          </div>
+
+                          <div className="p-1.5 bg-[#FAF3EA] border border-[#C29B68]/30 text-[10px] text-[#5C4033] flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-[#8A5835] shrink-0" />
+                            <span>Arquivo vetorial preservado para usinagem CNC e envio por e-mail.</span>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1 border-t border-[#DFD3C3]/60 text-[11px]">
+                            <label className="text-[#8A5835] hover:text-[#111] font-bold cursor-pointer flex items-center gap-1">
+                              <RefreshCw className="w-3 h-3" />
+                              <span>Substituir</span>
+                              <input
+                                type="file"
+                                accept=".svg,.png,.jpg,.jpeg,.webp,image/svg+xml,image/png,image/jpeg,image/webp"
+                                onChange={(e) => {
+                                  setReplacingElementId(el.id);
+                                  onFileInputChange(e);
+                                }}
+                                disabled={isUploading}
+                                className="hidden"
+                              />
+                            </label>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteElement(el.id)}
+                              className="text-red-700 hover:text-red-900 font-bold cursor-pointer flex items-center gap-1"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Remover Arte</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                   </div>
                 )}
 

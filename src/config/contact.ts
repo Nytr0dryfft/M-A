@@ -18,8 +18,8 @@ export const ATELIER_CONTACT = {
     fullFormatted: 'Rua Santa Maria Madalena, 198 - Siderlândia, Volta Redonda - RJ, CEP 27273-545',
   },
 
-  // E-mail de atendimento
-  email: 'atelier@cerne.design',
+  // E-mail de atendimento oficial do Atelier
+  email: 'matheuseamarildo@gmail.com',
 
   // Instagram Oficial do Ateliê
   instagramUrl: 'https://www.instagram.com/ma.ateliedemarcenaria?cplk=ZWt0eDRtOXhtdHhw',

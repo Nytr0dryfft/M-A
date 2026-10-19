@@ -1,8 +1,16 @@
-import { CanvasElement, ProductPieceType } from '../types/configurator';
+import {
+  CanvasElement,
+  ProductPieceType,
+  BoardPlacementReport,
+  ElementPlacementSpec,
+} from '../types/configurator';
 import { getWoodById } from '../data/woods';
+import { getAssetUrl } from './assets';
 
 export interface BoardSnapshotOptions {
+  orderId?: string;
   pieceType: ProductPieceType;
+  pieceLabel?: string;
   lengthCm: number;
   widthCm: number;
   thicknessCm: number;
@@ -10,6 +18,12 @@ export interface BoardSnapshotOptions {
   isResin?: boolean;
   elements: CanvasElement[];
   targetWidth?: number; // Largura do render em pixels (padrão: 1200px para alta definição)
+}
+
+export interface BoardSnapshotResult {
+  dataUrl: string;
+  blob: Blob;
+  placementReport: BoardPlacementReport;
 }
 
 /**
@@ -20,7 +34,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error('Falha ao carregar arte da prévia'));
+    img.onerror = () => reject(new Error('Falha ao carregar elemento visual'));
     img.src = src;
   });
 }
@@ -51,16 +65,149 @@ function drawRoundedRect(
 }
 
 /**
+ * Constrói o relatório técnico com dados estruturados de posicionamento de cada elemento
+ */
+export function generatePlacementReport(options: {
+  orderId: string;
+  pieceType: ProductPieceType;
+  pieceLabel?: string;
+  lengthCm: number;
+  widthCm: number;
+  thicknessCm: number;
+  woodType: string;
+  elements: CanvasElement[];
+}): BoardPlacementReport {
+  const {
+    orderId,
+    pieceType,
+    pieceLabel = pieceType === 'tabua_carne'
+      ? 'Tábua de Carne Sob Medida'
+      : 'Porta-Copos Personalizado',
+    lengthCm,
+    widthCm,
+    thicknessCm,
+    woodType,
+    elements,
+  } = options;
+
+  const sortedElements = elements.slice().sort((a, b) => a.zIndex - b.zIndex);
+
+  const elementSpecs: ElementPlacementSpec[] = sortedElements.map((el, index) => {
+    const centerXCm = Math.round(((el.xPercent / 100) * lengthCm) * 100) / 100;
+    const centerYCm = Math.round(((el.yPercent / 100) * widthCm) * 100) / 100;
+    const leftCm = Math.round((centerXCm - el.widthCm / 2) * 100) / 100;
+    const topCm = Math.round((centerYCm - el.heightCm / 2) * 100) / 100;
+
+    const label =
+      el.type === 'text'
+        ? `Texto: "${el.text || ''}"`
+        : el.isSvg
+        ? `Vetor SVG: ${el.imageFileName || 'arte.svg'}`
+        : `Imagem: ${el.imageFileName || 'arte.png'}`;
+
+    return {
+      elementIndex: index + 1,
+      id: el.id,
+      type: el.type,
+      label,
+      sourceFileName: el.imageFileName || (el.isSvg ? 'arte.svg' : null),
+      textContent: el.type === 'text' ? el.text || '' : null,
+      fontFamily: el.type === 'text' ? el.fontFamily || 'serif' : null,
+      isBold: Boolean(el.isBold),
+      isItalic: Boolean(el.isItalic),
+      positionPercent: {
+        x: Math.round(el.xPercent * 10) / 10,
+        y: Math.round(el.yPercent * 10) / 10,
+      },
+      physicalPositionCm: {
+        centerXCm,
+        centerYCm,
+        leftCm,
+        topCm,
+        unit: 'cm',
+      },
+      dimensionsCm: {
+        widthCm: Math.round(el.widthCm * 10) / 10,
+        heightCm: Math.round(el.heightCm * 10) / 10,
+        unit: 'cm',
+      },
+      rotationDeg: Math.round(el.rotationDeg),
+      zIndex: el.zIndex,
+      isSvg: Boolean(el.isSvg),
+    };
+  });
+
+  return {
+    orderId,
+    createdAt: new Date().toISOString(),
+    pieceType,
+    pieceLabel,
+    woodName: woodType,
+    boardDimensions: {
+      lengthCm,
+      widthCm,
+      thicknessCm,
+      unit: 'cm',
+    },
+    coordinateSystem: {
+      unit: 'cm',
+      referenceOrigin:
+        'Canto superior esquerdo da tábua (0,0) com orientação horizontal (Comprimento = Eixo X, Largura = Eixo Y)',
+      description:
+        'Centro da tábua em (Comprimento/2, Largura/2). As coordenadas (centerXCm, centerYCm) indicam o ponto central de referência para alinhamento e fresamento CNC.',
+    },
+    elementsCount: elementSpecs.length,
+    elements: elementSpecs,
+  };
+}
+
+/**
+ * Formata os dados de posicionamento em texto legível para Ficha Técnica e E-mail
+ */
+export function formatPlacementReportText(report: BoardPlacementReport): string {
+  if (report.elements.length === 0) {
+    return 'Nenhum elemento posicionado na tábua (peça lisa sem personalização).';
+  }
+
+  const lines: string[] = [
+    `SISTEMA DE COORDENADAS: ${report.coordinateSystem.referenceOrigin}`,
+    `DIMENSÕES DA PEÇA: ${report.boardDimensions.lengthCm} cm (Eixo X) x ${report.boardDimensions.widthCm} cm (Eixo Y) x ${report.boardDimensions.thicknessCm} cm (Espessura)`,
+    `TOTAL DE ELEMENTOS: ${report.elementsCount}`,
+    '',
+  ];
+
+  report.elements.forEach((el) => {
+    lines.push(
+      `[Elemento ${el.elementIndex}] ${el.label}`,
+      `  • Tipo: ${el.type.toUpperCase()}${el.isSvg ? ' (VETOR SVG ORIGINAL)' : ''}`,
+      el.sourceFileName ? `  • Arquivo de Origem: ${el.sourceFileName}` : '',
+      el.textContent ? `  • Conteúdo do Texto: "${el.textContent}" (${el.fontFamily || 'serif'})` : '',
+      `  • Posição Central: ${el.physicalPositionCm.centerXCm} cm X, ${el.physicalPositionCm.centerYCm} cm Y (${el.positionPercent.x}% X, ${el.positionPercent.y}% Y)`,
+      `  • Canto Superior Esquerdo: ${el.physicalPositionCm.leftCm} cm X, ${el.physicalPositionCm.topCm} cm Y`,
+      `  • Dimensões Físicas: ${el.dimensionsCm.widthCm} cm largura x ${el.dimensionsCm.heightCm} cm altura`,
+      `  • Rotação: ${el.rotationDeg}°`,
+      `  • Camada (Z-Index): ${el.zIndex}`,
+      ''
+    );
+  });
+
+  return lines.filter(Boolean).join('\n');
+}
+
+/**
  * Gera uma imagem PNG da tábua de carne / porta-copos personalizada
  * exatamente como configurada pelo cliente (proporções, modelo, arte, rotação, escala e posição).
  */
 export async function generateBoardSnapshot(
   options: BoardSnapshotOptions
-): Promise<{ dataUrl: string; blob: Blob }> {
+): Promise<BoardSnapshotResult> {
   const {
+    orderId = `ORD-${Date.now().toString(36).toUpperCase()}`,
     pieceType,
+    pieceLabel,
     lengthCm,
     widthCm,
+    thicknessCm,
     woodType,
     isResin = false,
     elements,
@@ -90,9 +237,19 @@ export async function generateBoardSnapshot(
   ctx.save();
   ctx.clip();
 
-  // Preenchimento de base
+  // Preenchimento de base com cor da madeira
   ctx.fillStyle = woodTheme.baseColor;
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+  // Tenta desenhar textura fotográfica da madeira se disponível
+  if (woodTheme.textureUrl) {
+    try {
+      const textureImg = await loadImage(getAssetUrl(woodTheme.textureUrl));
+      ctx.drawImage(textureImg, 0, 0, canvasWidth, canvasHeight);
+    } catch {
+      // Fallback gracioso mantendo cor de base
+    }
+  }
 
   // Gradiente longitudinal sutil simulando fibras da madeira maciça
   const woodGradient = ctx.createLinearGradient(0, 0, canvasWidth, canvasHeight);
@@ -122,7 +279,6 @@ export async function generateBoardSnapshot(
     const gh = canvasHeight - grooveMarginPx * 2;
 
     if (gw > 20 && gh > 20) {
-      // Sombra externa da canaleta (entalhe em baixo relevo)
       ctx.save();
       drawRoundedRect(ctx, gx, gy, gw, gh, grooveRadiusPx);
       ctx.lineWidth = grooveWidthPx;
@@ -152,36 +308,43 @@ export async function generateBoardSnapshot(
       ctx.rotate((el.rotationDeg * Math.PI) / 180);
     }
 
-    if (el.type === 'image' && el.imageSrc) {
-      try {
-        const img = await loadImage(el.imageSrc);
+    if (el.type === 'image') {
+      // Prioriza SVG em texto original codificado em dataURL para nitidez vetorial perfeita
+      let imageSrcToLoad = el.imageSrc;
+      if (el.isSvg && el.rawSvgText) {
+        imageSrcToLoad = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(el.rawSvgText)}`;
+      }
 
-        // Efeito de relevo / resina epóxi na usinagem
-        ctx.save();
-        if (isResin) {
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-          ctx.shadowBlur = 6;
-          ctx.shadowOffsetX = 1;
-          ctx.shadowOffsetY = 2;
-        } else {
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-          ctx.shadowBlur = 3;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 1;
+      if (imageSrcToLoad) {
+        try {
+          const img = await loadImage(imageSrcToLoad);
+
+          ctx.save();
+          if (isResin) {
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+            ctx.shadowBlur = 6;
+            ctx.shadowOffsetX = 1;
+            ctx.shadowOffsetY = 2;
+          } else {
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            ctx.shadowBlur = 3;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 1;
+          }
+
+          ctx.drawImage(img, -elWidth / 2, -elHeight / 2, elWidth, elHeight);
+          ctx.restore();
+        } catch (err) {
+          console.warn('Falha ao renderizar imagem no snapshot:', err);
         }
-
-        ctx.drawImage(img, -elWidth / 2, -elHeight / 2, elWidth, elHeight);
-        ctx.restore();
-      } catch (err) {
-        console.warn('Falha ao renderizar imagem no snapshot:', err);
       }
     } else if (el.type === 'text' && el.text) {
-      const fontSizePx = Math.max(14, Math.round((elHeight * 0.75)));
+      const fontSizePx = Math.max(14, Math.round(elHeight * 0.75));
       ctx.font = `${el.isBold ? 'bold ' : ''}${el.isItalic ? 'italic ' : ''}${fontSizePx}px ${el.fontFamily || 'serif'}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
-      // Sombra chanfrada simulando baixo relevo CNC
+      // Efeito de relevo / resina CNC
       ctx.fillStyle = isResin ? '#120B07' : '#22140B';
       ctx.shadowColor = 'rgba(255, 255, 255, 0.25)';
       ctx.shadowOffsetX = 1;
@@ -208,5 +371,16 @@ export async function generateBoardSnapshot(
     );
   });
 
-  return { dataUrl, blob };
+  const placementReport = generatePlacementReport({
+    orderId,
+    pieceType,
+    pieceLabel,
+    lengthCm,
+    widthCm,
+    thicknessCm,
+    woodType,
+    elements,
+  });
+
+  return { dataUrl, blob, placementReport };
 }

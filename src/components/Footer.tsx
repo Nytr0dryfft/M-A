@@ -79,6 +79,9 @@ export const Footer: React.FC<FooterProps> = ({
             <a href="#moveis" className="text-[11px] sm:text-xs text-[#DFD3C3] hover:text-white transition-colors">
               Mesas &amp; Banquetas
             </a>
+            <a href="#fotos-clientes" className="text-[11px] sm:text-xs text-[#DFD3C3] hover:text-white transition-colors">
+              Fotos de Clientes (Galeria Real)
+            </a>
             <a href="#encomenda" className="text-[11px] sm:text-xs text-[#DFD3C3] hover:text-white transition-colors">
               Personalização CNC Sob Medida
             </a>
