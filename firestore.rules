@@ -46,8 +46,8 @@ service cloud.firestore {
 
     // Galeria Real de Fotos de Clientes cadastradas pelo Administrador
     match /customer_photos/{photoId} {
-      // Leitura pública de fotos publicadas
-      allow read: if resource.data.published == true || request.auth != null;
+      // Leitura pública irrestrita para visitantes visualizarem a galeria documental de clientes
+      allow read: if true;
       // Escrita restrita ao administrador autenticado
       allow write: if request.auth != null;
     }

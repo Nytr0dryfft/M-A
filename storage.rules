@@ -33,9 +33,14 @@ service firebase.storage {
     }
 
     // Galeria de fotografias de clientes do Ateliê:
-    // - Leitura pública para exibição na página inicial e no catálogo
+    // - Leitura pública para exibição na página inicial e no catálogo (incluindo miniaturas)
     // - Gravação permitida para usuário autenticado (administrador do Ateliê)
-    match /customer_photos/{fileName} {
+    match /customer_photos/{fileName=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /photos/{fileName=**} {
       allow read: if true;
       allow write: if request.auth != null;
     }

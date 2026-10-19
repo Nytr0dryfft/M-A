@@ -19,6 +19,7 @@ import {
   uploadBytes,
   getDownloadURL,
   deleteObject,
+  listAll,
 } from 'firebase/storage';
 
 export interface CustomerPhoto {
@@ -219,9 +220,95 @@ export async function loadCustomerPhotos(onlyPublished = false): Promise<Custome
           saveToLocalStorage(cloudPhotos);
           return onlyPublished ? cloudPhotos.filter((p) => p.published) : cloudPhotos;
         }
+
+        // Se o Firestore estiver vazio, verifica se há fotos salvas diretamente no Firebase Storage
+        const storage = getFirebaseStorage();
+        if (storage) {
+          try {
+            const listRef = ref(storage, 'customer_photos');
+            const storageResult = await listAll(listRef);
+            const mainItems = storageResult.items.filter((item) => !item.name.includes('_thumb'));
+            if (mainItems.length > 0) {
+              const storagePhotos: CustomerPhoto[] = await Promise.all(
+                mainItems.map(async (item, idx) => {
+                  const imageUrl = await getDownloadURL(item);
+                  const thumbItem = storageResult.items.find(
+                    (t) => t.name === item.name.replace(/\.[^/.]+$/, '') + '_thumb.jpg'
+                  );
+                  const thumbUrl = thumbItem ? await getDownloadURL(thumbItem) : imageUrl;
+                  const rawName = item.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+
+                  return {
+                    id: item.name.replace(/\.[^/.]+$/, ''),
+                    imageUrl,
+                    thumbnailUrl: thumbUrl,
+                    category: 'Galeria',
+                    title: rawName.charAt(0).toUpperCase() + rawName.slice(1),
+                    published: true,
+                    order: idx + 1,
+                    createdAt: new Date().toISOString(),
+                  };
+                })
+              );
+
+              if (storagePhotos.length > 0) {
+                memoryPhotosCache = {
+                  photos: storagePhotos,
+                  timestamp: Date.now(),
+                };
+                saveToLocalStorage(storagePhotos);
+                return onlyPublished ? storagePhotos.filter((p) => p.published) : storagePhotos;
+              }
+            }
+          } catch (storageErr) {
+            console.warn('Verificação de fotos diretamente no Storage:', storageErr);
+          }
+        }
       }
     } catch (err) {
-      console.warn('Consulta ao Firestore não respondeu a tempo ou falhou, utilizando cache local:', err);
+      console.warn('Consulta ao Firestore não respondeu a tempo ou falhou, verificando Firebase Storage:', err);
+      const storage = getFirebaseStorage();
+      if (storage) {
+        try {
+          const listRef = ref(storage, 'customer_photos');
+          const storageResult = await listAll(listRef);
+          const mainItems = storageResult.items.filter((item) => !item.name.includes('_thumb'));
+          if (mainItems.length > 0) {
+            const storagePhotos: CustomerPhoto[] = await Promise.all(
+              mainItems.map(async (item, idx) => {
+                const imageUrl = await getDownloadURL(item);
+                const thumbItem = storageResult.items.find(
+                  (t) => t.name === item.name.replace(/\.[^/.]+$/, '') + '_thumb.jpg'
+                );
+                const thumbUrl = thumbItem ? await getDownloadURL(thumbItem) : imageUrl;
+                const rawName = item.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+
+                return {
+                  id: item.name.replace(/\.[^/.]+$/, ''),
+                  imageUrl,
+                  thumbnailUrl: thumbUrl,
+                  category: 'Galeria',
+                  title: rawName.charAt(0).toUpperCase() + rawName.slice(1),
+                  published: true,
+                  order: idx + 1,
+                  createdAt: new Date().toISOString(),
+                };
+              })
+            );
+
+            if (storagePhotos.length > 0) {
+              memoryPhotosCache = {
+                photos: storagePhotos,
+                timestamp: Date.now(),
+              };
+              saveToLocalStorage(storagePhotos);
+              return onlyPublished ? storagePhotos.filter((p) => p.published) : storagePhotos;
+            }
+          }
+        } catch (storageErr) {
+          console.warn('Tentativa direta no Firebase Storage falhou:', storageErr);
+        }
+      }
     }
   }
 

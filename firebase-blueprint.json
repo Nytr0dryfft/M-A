@@ -91,12 +91,80 @@
         "status",
         "source"
       ]
+    },
+    "CustomerPhoto": {
+      "title": "CustomerPhoto",
+      "description": "Fotografia real de peça artesanal entregue pelo Atelier M&A",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID único da fotografia"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL da imagem original em alta resolução no Firebase Storage"
+        },
+        "thumbnailUrl": {
+          "type": "string",
+          "description": "URL da miniatura compacta (<80KB) otimizada para carregamento progressivo"
+        },
+        "title": {
+          "type": "string",
+          "description": "Título descritivo da peça"
+        },
+        "category": {
+          "type": "string",
+          "description": "Categoria da peça (ex: Tábuas de Carne, Porta-copos, Mesas)"
+        },
+        "wood": {
+          "type": "string",
+          "description": "Espécie de madeira utilizada"
+        },
+        "clientName": {
+          "type": "string",
+          "description": "Nome autorizado do cliente"
+        },
+        "isNameAuthorized": {
+          "type": "boolean",
+          "description": "Indica se o cliente autorizou a publicação do nome"
+        },
+        "city": {
+          "type": "string",
+          "description": "Cidade e estado de entrega"
+        },
+        "rating": {
+          "type": "number",
+          "description": "Nota real de satisfação (1 a 5)"
+        },
+        "comment": {
+          "type": "string",
+          "description": "Depoimento real do cliente"
+        },
+        "published": {
+          "type": "boolean",
+          "description": "Se a foto está visível ao público"
+        },
+        "order": {
+          "type": "integer",
+          "description": "Ordem de exibição na galeria"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "imageUrl", "category", "published", "order", "createdAt"]
     }
   },
   "firestore": {
     "/orders/{orderId}": {
       "schema": "Order",
       "description": "Coleção segura de pedidos e orçamentos do configurador"
+    },
+    "/customer_photos/{photoId}": {
+      "schema": "CustomerPhoto",
+      "description": "Galeria real de fotografias compartilhadas de clientes do Atelier M&A"
     }
   }
 }

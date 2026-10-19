@@ -33,11 +33,26 @@ const CustomerPhotoCard: React.FC<{
   onGoToCustomizer?: (pieceType?: 'tabua_carne' | 'porta_copos' | 'movel') => void;
   priority?: boolean;
 }> = ({ photo, onSelect, onGoToCustomizer, priority = false }) => {
+  const initialUrl = photo.thumbnailUrl || photo.imageUrl;
+  const [currentSrc, setCurrentSrc] = useState<string>(initialUrl);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  // Utiliza a miniatura otimizada (< 90 KB) para a grade; reserva a imagem original para o modal
-  const displayUrl = photo.thumbnailUrl || photo.imageUrl;
+  useEffect(() => {
+    setCurrentSrc(photo.thumbnailUrl || photo.imageUrl);
+    setImageLoaded(false);
+    setImageError(false);
+  }, [photo.thumbnailUrl, photo.imageUrl]);
+
+  const handleImageError = () => {
+    // Se a miniatura falhou, tenta carregar diretamente a URL original da foto
+    if (currentSrc !== photo.imageUrl && photo.imageUrl) {
+      setCurrentSrc(photo.imageUrl);
+      setImageLoaded(false);
+    } else {
+      setImageError(true);
+    }
+  };
 
   return (
     <div className="bg-white border border-[#DFD3C3] shadow-md group hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden">
@@ -62,7 +77,7 @@ const CustomerPhotoCard: React.FC<{
             </div>
           ) : (
             <img
-              src={displayUrl}
+              src={currentSrc}
               alt={photo.title || `Fotografia de peça artesanal M&A - ${photo.category}`}
               className={`w-full h-full object-cover group-hover:scale-104 transition-all duration-700 ease-out ${
                 imageLoaded ? 'opacity-100' : 'opacity-0'
@@ -71,7 +86,7 @@ const CustomerPhotoCard: React.FC<{
               fetchPriority={priority ? 'high' : 'auto'}
               decoding="async"
               onLoad={() => setImageLoaded(true)}
-              onError={() => setImageError(true)}
+              onError={handleImageError}
             />
           )}
 

@@ -32,9 +32,25 @@ const ModalPhotoCard: React.FC<{
   photo: CustomerPhoto;
   onSelect: (photo: CustomerPhoto) => void;
 }> = ({ photo, onSelect }) => {
+  const initialUrl = photo.thumbnailUrl || photo.imageUrl;
+  const [currentSrc, setCurrentSrc] = useState<string>(initialUrl);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const displayUrl = photo.thumbnailUrl || photo.imageUrl;
+
+  useEffect(() => {
+    setCurrentSrc(photo.thumbnailUrl || photo.imageUrl);
+    setImageLoaded(false);
+    setImageError(false);
+  }, [photo.thumbnailUrl, photo.imageUrl]);
+
+  const handleImageError = () => {
+    if (currentSrc !== photo.imageUrl && photo.imageUrl) {
+      setCurrentSrc(photo.imageUrl);
+      setImageLoaded(false);
+    } else {
+      setImageError(true);
+    }
+  };
 
   return (
     <div
@@ -50,12 +66,12 @@ const ModalPhotoCard: React.FC<{
         )}
 
         <img
-          src={displayUrl}
+          src={currentSrc}
           alt={photo.title || photo.category}
           loading="lazy"
           decoding="async"
           onLoad={() => setImageLoaded(true)}
-          onError={() => setImageError(true)}
+          onError={handleImageError}
           className={`w-full h-full object-cover group-hover:scale-104 transition-all duration-500 ${
             imageLoaded ? 'opacity-100' : 'opacity-0'
           }`}

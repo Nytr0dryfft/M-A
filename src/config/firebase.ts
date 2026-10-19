@@ -30,7 +30,7 @@ export interface FirebaseClientConfig {
  * Credenciais do Projeto Firebase do Ateliê M&A (meaatelie-5b767)
  */
 export const DEFAULT_FIREBASE_CONFIG: FirebaseClientConfig = {
-  apiKey: '',
+  apiKey: 'AIzaSyAjenjzPc_IMxgYmtjtiaxk-TGVrJrlWvg',
   authDomain: 'meaatelie-5b767.firebaseapp.com',
   projectId: 'meaatelie-5b767',
   storageBucket: 'meaatelie-5b767.firebasestorage.app',

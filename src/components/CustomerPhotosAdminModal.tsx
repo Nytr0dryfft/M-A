@@ -559,6 +559,11 @@ export const CustomerPhotosAdminModal: React.FC<CustomerPhotosAdminModalProps> =
                               alt={photo.title || 'Foto de cliente'}
                               loading="lazy"
                               decoding="async"
+                              onError={(e) => {
+                                if (photo.imageUrl && e.currentTarget.src !== photo.imageUrl) {
+                                  e.currentTarget.src = photo.imageUrl;
+                                }
+                              }}
                               className="w-full h-full object-cover"
                             />
                             {!photo.published && (
