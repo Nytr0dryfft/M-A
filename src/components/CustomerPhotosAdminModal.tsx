@@ -95,6 +95,10 @@ export const CustomerPhotosAdminModal: React.FC<CustomerPhotosAdminModalProps> =
   const [comment, setComment] = useState('');
   const [published, setPublished] = useState(true);
 
+  // Estado para exclusão segura in-app (sem depender de window.confirm bloqueado em iframe)
+  const [photoToDelete, setPhotoToDelete] = useState<CustomerPhoto | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Verifica sessão admin ao abrir
   useEffect(() => {
     if (isOpen) {
@@ -300,21 +304,41 @@ export const CustomerPhotosAdminModal: React.FC<CustomerPhotosAdminModalProps> =
     setFeedbackMessage(null);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Tem certeza de que deseja excluir permanentemente esta fotografia da galeria?')) {
-      return;
-    }
-    setLoading(true);
+  const handleRequestDelete = (photo: CustomerPhoto) => {
+    setPhotoToDelete(photo);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!photoToDelete) return;
+    const targetId = photoToDelete.id;
+    const targetTitle = photoToDelete.title || 'Foto';
+    setIsDeleting(true);
+
+    // Remoção visual otimista imediata
+    setPhotos((prev) => prev.filter((p) => p.id !== targetId));
+
     try {
-      await deleteCustomerPhoto(id);
-      await fetchPhotos();
+      await deleteCustomerPhoto(targetId);
+      const data = await loadCustomerPhotos(false);
+      setPhotos(data);
       onPhotosUpdated();
-      setFeedbackMessage({ type: 'success', text: 'Fotografia excluída com sucesso.' });
-    } catch (err) {
-      console.error(err);
-      setFeedbackMessage({ type: 'error', text: 'Erro ao excluir fotografia.' });
+      setFeedbackMessage({
+        type: 'success',
+        text: `Fotografia "${targetTitle}" excluída com sucesso da galeria e do Firebase!`,
+      });
+      setPhotoToDelete(null);
+      if (editingId === targetId) {
+        resetForm();
+        setActiveTab('list');
+      }
+    } catch (err: any) {
+      console.error('Erro ao excluir fotografia:', err);
+      setFeedbackMessage({
+        type: 'error',
+        text: `Erro ao excluir fotografia: ${err?.message || 'Tente novamente.'}`,
+      });
     } finally {
-      setLoading(false);
+      setIsDeleting(false);
     }
   };
 
@@ -710,12 +734,12 @@ export const CustomerPhotosAdminModal: React.FC<CustomerPhotosAdminModalProps> =
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
 
-                          {/* Excluir */}
+                          {/* Excluir com confirmação interativa */}
                           <button
                             type="button"
-                            onClick={() => handleDelete(photo.id)}
-                            className="p-1.5 border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer"
-                            title="Excluir fotografia"
+                            onClick={() => handleRequestDelete(photo)}
+                            className="p-1.5 border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 cursor-pointer transition-colors"
+                            title="Excluir fotografia permanentemente"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -953,24 +977,43 @@ export const CustomerPhotosAdminModal: React.FC<CustomerPhotosAdminModalProps> =
                 </div>
 
                 {/* Botões de Ação */}
-                <div className="flex items-center justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      resetForm();
-                      setActiveTab('list');
-                    }}
-                    className="px-4 py-2.5 border border-[#DFD3C3] text-xs font-bold uppercase tracking-wider text-[#5C4033] hover:bg-[#F5EFE6] cursor-pointer"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading || !imagePreview}
-                    className="px-6 py-2.5 bg-[#2A1E17] hover:bg-[#8A5835] text-white text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer disabled:opacity-50 shadow"
-                  >
-                    {loading ? 'Salvando...' : activeTab === 'edit' ? 'Salvar Alterações' : 'Publicar Fotografia'}
-                  </button>
+                <div className="flex items-center justify-between gap-3 pt-2">
+                  {activeTab === 'edit' && editingId ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const p = photos.find((x) => x.id === editingId);
+                        if (p) handleRequestDelete(p);
+                      }}
+                      className="px-3.5 py-2.5 border border-red-300 text-red-600 hover:bg-red-50 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors"
+                      title="Excluir permanentemente esta fotografia"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Excluir Fotografia</span>
+                    </button>
+                  ) : (
+                    <div />
+                  )}
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetForm();
+                        setActiveTab('list');
+                      }}
+                      className="px-4 py-2.5 border border-[#DFD3C3] text-xs font-bold uppercase tracking-wider text-[#5C4033] hover:bg-[#F5EFE6] cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading || !imagePreview}
+                      className="px-6 py-2.5 bg-[#2A1E17] hover:bg-[#8A5835] text-white text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer disabled:opacity-50 shadow"
+                    >
+                      {loading ? 'Salvando...' : activeTab === 'edit' ? 'Salvar Alterações' : 'Publicar Fotografia'}
+                    </button>
+                  </div>
                 </div>
               </form>
             )}
@@ -1376,6 +1419,86 @@ service cloud.firestore {
           </div>
         )}
       </div>
+
+      {/* MODAL IN-APP DE CONFIRMAÇÃO DE EXCLUSÃO (100% funcional sem depender de window.confirm) */}
+      {photoToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+          <div className="bg-[#FAF7F2] border-2 border-red-300 shadow-2xl max-w-md w-full p-5 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 bg-red-100 border border-red-300 text-red-700 shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h4 className="font-serif font-bold text-base text-[#111]">
+                  Excluir Fotografia da Galeria?
+                </h4>
+                <p className="text-xs text-[#5C4033] mt-1 leading-relaxed">
+                  Esta ação é irreversível. A fotografia, a miniatura e os metadados serão removidos permanentemente do <strong>Firebase Storage</strong> e da galeria pública do Ateliê M&amp;A.
+                </p>
+              </div>
+            </div>
+
+            {/* Prévia da Foto a ser excluída */}
+            <div className="p-3 bg-white border border-[#DFD3C3] flex items-center gap-3">
+              <div className="w-16 h-16 bg-[#2A1E17] border border-[#DFD3C3] shrink-0 overflow-hidden">
+                <img
+                  src={photoToDelete.thumbnailUrl || photoToDelete.imageUrl}
+                  alt={photoToDelete.title || 'Foto selecionada'}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="min-w-0 flex-1 text-xs">
+                <div className="font-bold text-[#111] truncate text-sm">
+                  {photoToDelete.title || 'Sem título'}
+                </div>
+                <div className="text-[11px] text-[#8A5835] font-semibold mt-0.5">
+                  {photoToDelete.category}
+                </div>
+                {photoToDelete.clientName && (
+                  <div className="text-[11px] text-[#5C4033] truncate mt-0.5">
+                    Cliente: <strong>{photoToDelete.clientName}</strong>
+                  </div>
+                )}
+                {photoToDelete.city && (
+                  <div className="text-[10px] text-[#5C4033]/80 truncate">
+                    {photoToDelete.city}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Botões de Ação */}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#DFD3C3]">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setPhotoToDelete(null)}
+                className="px-4 py-2 border border-[#DFD3C3] bg-white hover:bg-[#F5EFE6] text-[#3E2D22] text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors flex items-center gap-1.5 disabled:opacity-50 shadow-sm"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Excluindo do Firebase...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Sim, Excluir Definitivamente</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -149,7 +149,7 @@ export const CustomerPhotosModal: React.FC<CustomerPhotosModalProps> = ({
     }
     try {
       const data = await loadCustomerPhotos(true); // Apenas publicadas
-      if (data && data.length > 0) {
+      if (Array.isArray(data)) {
         setPhotos(data);
       }
     } catch (e) {

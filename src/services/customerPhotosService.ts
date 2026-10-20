@@ -301,18 +301,54 @@ export async function loadCustomerPhotos(onlyPublished = false): Promise<Custome
           (item) => !item.name.includes('_thumb') && !item.name.endsWith('.json')
         );
 
+        if (mainItems.length === 0) {
+          // O Firebase Storage respondeu e confirmou que a galeria na nuvem está vazia
+          memoryPhotosCache = {
+            photos: [],
+            timestamp: Date.now(),
+          };
+          saveToLocalStorage([]);
+          try {
+            const dbLocal = await openIndexedDB();
+            const tx = dbLocal.transaction(STORE_NAME, 'readwrite');
+            tx.objectStore(STORE_NAME).clear();
+          } catch {}
+          return [];
+        }
+
         if (mainItems.length > 0) {
           const storagePhotos: CustomerPhoto[] = await Promise.all(
             mainItems.map(async (item, idx) => {
+              const baseId = item.name.replace(/\.[^/.]+$/, '');
               const imageUrl = await getDownloadURL(item);
               const thumbItem = storageResult.items.find(
-                (t) => t.name === item.name.replace(/\.[^/.]+$/, '') + '_thumb.jpg'
+                (t) => t.name === `${baseId}_thumb.jpg`
               );
               const thumbUrl = thumbItem ? await getDownloadURL(thumbItem) : imageUrl;
-              const rawName = item.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+              const rawName = baseId.replace(/[-_]/g, ' ');
+
+              // Tenta ler o arquivo de metadados .json correspondente
+              const jsonItem = storageResult.items.find((t) => t.name === `${baseId}.json`);
+              if (jsonItem) {
+                try {
+                  const jsonUrl = await getDownloadURL(jsonItem);
+                  const res = await fetch(jsonUrl);
+                  if (res.ok) {
+                    const parsed = await res.json();
+                    return {
+                      ...parsed,
+                      id: parsed.id || baseId,
+                      imageUrl: imageUrl || parsed.imageUrl,
+                      thumbnailUrl: thumbUrl || parsed.thumbnailUrl || imageUrl,
+                    } as CustomerPhoto;
+                  }
+                } catch {
+                  // Continua para o objeto derivado
+                }
+              }
 
               return {
-                id: item.name.replace(/\.[^/.]+$/, ''),
+                id: baseId,
                 imageUrl,
                 thumbnailUrl: thumbUrl,
                 category: 'Tábuas de Carne',
@@ -502,17 +538,23 @@ export async function createCustomerPhoto(
     }
   }
 
-  // 3. Gravação dos metadados no Cloud Firestore
+  // 3. Gravação dos metadados no Cloud Firestore com timeout estrito
   if (db) {
     try {
-      await setDoc(doc(db, 'customer_photos', newPhoto.id), {
-        ...newPhoto,
-        authorRole: 'admin',
-        serverTimestamp: serverTimestamp(),
-      });
+      const timeoutFirestore = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Firestore timeout')), 1800)
+      );
+      await Promise.race([
+        setDoc(doc(db, 'customer_photos', newPhoto.id), {
+          ...newPhoto,
+          authorRole: 'admin',
+          serverTimestamp: serverTimestamp(),
+        }),
+        timeoutFirestore,
+      ]);
     } catch (firestoreErr: any) {
       console.warn(
-        'Aviso do Firestore (API desativada no Console ou permissão negada). A imagem foi salva no Storage e continuará visível:',
+        'Aviso do Firestore (API desativada no Console ou timeout). A imagem foi salva no Storage e continuará visível:',
         firestoreErr?.message || firestoreErr
       );
     }
@@ -647,6 +689,7 @@ export async function updateCustomerPhoto(photo: CustomerPhoto): Promise<Custome
 
 /**
  * Exclui uma foto cadastrada e suas miniaturas do Firebase e locais.
+ * Totalmente não bloqueante, com timeouts estritos para Firestore e Storage.
  */
 export async function deleteCustomerPhoto(id: string): Promise<boolean> {
   if (isFirebaseConfigured()) {
@@ -654,43 +697,83 @@ export async function deleteCustomerPhoto(id: string): Promise<boolean> {
       await ensureAuthenticatedUser();
       const db = getFirebaseFirestore();
       const storage = getFirebaseStorage();
+
+      // 1. Deleção no Firestore com timeout estrito de 1.5s (não bloqueia caso API esteja desativada)
       if (db) {
         try {
-          await deleteDoc(doc(db, 'customer_photos', id));
-        } catch {}
+          const timeoutFirestore = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Firestore timeout')), 1500)
+          );
+          await Promise.race([deleteDoc(doc(db, 'customer_photos', id)), timeoutFirestore]);
+        } catch (e: any) {
+          console.warn('deleteDoc Firestore timeout/aviso (prosseguindo):', e?.message || e);
+        }
       }
+
+      // 2. Deleção no Firebase Storage
       if (storage) {
+        // Listar e remover todos os arquivos correspondentes a este ID (original, miniatura, json)
         try {
-          await deleteObject(ref(storage, `customer_photos/${id}.jpg`));
-        } catch {}
-        try {
-          await deleteObject(ref(storage, `customer_photos/${id}_thumb.jpg`));
-        } catch {}
-        try {
-          await deleteObject(ref(storage, `customer_photos/${id}.json`));
-        } catch {}
+          const listRef = ref(storage, 'customer_photos');
+          const timeoutStorage = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Storage list timeout')), 2500)
+          );
+          const listResult = await Promise.race([listAll(listRef), timeoutStorage]);
+          const matchingItems = listResult.items.filter(
+            (item) =>
+              item.name === id ||
+              item.name.startsWith(`${id}.`) ||
+              item.name.startsWith(`${id}_`)
+          );
+          if (matchingItems.length > 0) {
+            await Promise.allSettled(matchingItems.map((item) => deleteObject(item)));
+          }
+        } catch (listErr) {
+          console.warn('Listagem para deleção no Storage falhou:', listErr);
+        }
+
+        // Deleções diretas adicionais por garantia para todos os formatos possíveis
+        const directDeletes = [
+          deleteObject(ref(storage, `customer_photos/${id}.jpg`)),
+          deleteObject(ref(storage, `customer_photos/${id}_thumb.jpg`)),
+          deleteObject(ref(storage, `customer_photos/${id}.json`)),
+          deleteObject(ref(storage, `customer_photos/${id}.png`)),
+          deleteObject(ref(storage, `customer_photos/${id}.jpeg`)),
+          deleteObject(ref(storage, `customer_photos/${id}.webp`)),
+        ];
+        await Promise.allSettled(directDeletes);
       }
     } catch (err) {
       console.warn('Erro ao deletar foto do Firebase:', err);
     }
   }
 
+  // 3. Remoção do IndexedDB com timeout seguro
   try {
     const dbLocal = await openIndexedDB();
-    await new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve) => {
+      const timer = setTimeout(() => resolve(), 800);
       const transaction = dbLocal.transaction(STORE_NAME, 'readwrite');
       const store = transaction.objectStore(STORE_NAME);
       const req = store.delete(id);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
+      req.onsuccess = () => {
+        clearTimeout(timer);
+        resolve();
+      };
+      req.onerror = () => {
+        clearTimeout(timer);
+        resolve();
+      };
     });
   } catch (err) {
     // ignore
   }
 
+  // 4. Remoção do LocalStorage
   const existing = getFromLocalStorage().filter((p) => p.id !== id);
   saveToLocalStorage(existing);
 
+  // 5. Invalida cache de memória imediatamente para sincronizar todas as views
   invalidateCustomerPhotosCache();
   return true;
 }

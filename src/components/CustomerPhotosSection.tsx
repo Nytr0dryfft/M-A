@@ -203,7 +203,7 @@ export const CustomerPhotosSection: React.FC<CustomerPhotosSectionProps> = ({
         setIsDataLoading(true);
       }
       const data = await loadCustomerPhotos(true); // Apenas publicadas
-      if (data && data.length > 0) {
+      if (Array.isArray(data)) {
         setPhotos(data);
       }
     } catch (err) {
