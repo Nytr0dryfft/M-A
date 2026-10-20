@@ -20,6 +20,10 @@ import {
   Cloud,
   CheckCircle2,
   Key,
+  Copy,
+  ExternalLink,
+  ShieldCheck,
+  Activity,
 } from 'lucide-react';
 import {
   CustomerPhoto,
@@ -29,6 +33,7 @@ import {
   reorderCustomerPhotos,
   loadCustomerPhotos,
   optimizeExistingCustomerPhotos,
+  testFirebaseDiagnostics,
 } from '../services/customerPhotosService';
 import {
   getFirebaseConfig,
@@ -58,11 +63,23 @@ export const CustomerPhotosAdminModal: React.FC<CustomerPhotosAdminModalProps> =
   const [loginError, setLoginError] = useState<string | null>(null);
 
   const [photos, setPhotos] = useState<CustomerPhoto[]>([]);
-  const [activeTab, setActiveTab] = useState<'list' | 'create' | 'edit'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'create' | 'edit' | 'diagnostics'>('list');
   const [loading, setLoading] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizingProgress, setOptimizingProgress] = useState<{ current: number; total: number } | null>(null);
+  const [diagnosticsRunning, setDiagnosticsRunning] = useState(false);
+  const [diagnosticsResult, setDiagnosticsResult] = useState<{
+    authOk: boolean;
+    authUid?: string;
+    authError?: string;
+    storageOk: boolean;
+    storageError?: string;
+    firestoreOk: boolean;
+    firestoreError?: string;
+  } | null>(null);
+  const [storageRulesCopied, setStorageRulesCopied] = useState(false);
+  const [firestoreRulesCopied, setFirestoreRulesCopied] = useState(false);
 
   // Form State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -122,6 +139,18 @@ export const CustomerPhotosAdminModal: React.FC<CustomerPhotosAdminModalProps> =
     } finally {
       setIsOptimizing(false);
       setOptimizingProgress(null);
+    }
+  };
+
+  const handleRunDiagnostics = async () => {
+    setDiagnosticsRunning(true);
+    try {
+      const res = await testFirebaseDiagnostics();
+      setDiagnosticsResult(res);
+    } catch (err: any) {
+      console.error('Falha ao executar diagnóstico:', err);
+    } finally {
+      setDiagnosticsRunning(false);
     }
   };
 
@@ -477,6 +506,23 @@ export const CustomerPhotosAdminModal: React.FC<CustomerPhotosAdminModalProps> =
                 >
                   <Plus className="w-3.5 h-3.5 text-[#C29B68]" />
                   <span>Cadastrar Nova Foto</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('diagnostics');
+                    if (!diagnosticsResult && !diagnosticsRunning) {
+                      handleRunDiagnostics();
+                    }
+                  }}
+                  className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    activeTab === 'diagnostics'
+                      ? 'bg-[#2A1E17] text-white shadow-xs'
+                      : 'bg-white text-[#5C4033] hover:bg-[#DFD3C3]/50'
+                  }`}
+                >
+                  <Activity className="w-3.5 h-3.5 text-[#C29B68]" />
+                  <span>Diagnóstico & Regras</span>
                 </button>
               </div>
 
@@ -927,6 +973,405 @@ export const CustomerPhotosAdminModal: React.FC<CustomerPhotosAdminModalProps> =
                   </button>
                 </div>
               </form>
+            )}
+
+            {/* TAB: DIAGNÓSTICO E REGRAS DE SEGURANÇA */}
+            {activeTab === 'diagnostics' && (
+              <div className="p-4 sm:p-6 space-y-6">
+                <div>
+                  <h4 className="font-serif text-lg sm:text-xl font-bold text-[#111111] mb-1">
+                    Diagnóstico de Conexão e Regras de Segurança
+                  </h4>
+                  <p className="text-xs text-[#5C4033] leading-relaxed">
+                    Verifique se o Firebase Storage e o Firestore estão autorizados para salvar e exibir fotografias na nuvem para qualquer visitante.
+                  </p>
+                </div>
+
+                {/* Botão de Teste em Tempo Real */}
+                <div className="p-4 bg-white border border-[#DFD3C3] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+                  <div>
+                    <h5 className="text-xs font-bold uppercase tracking-wider text-[#111]">
+                      Status Atual da Conexão Firebase
+                    </h5>
+                    <p className="text-[11px] text-[#5C4033] mt-0.5">
+                      Executa testes ao vivo de autenticação, permissão de upload no Storage e leitura do Firestore.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={diagnosticsRunning}
+                    onClick={handleRunDiagnostics}
+                    className="px-4 py-2 bg-[#2A1E17] hover:bg-[#8A5835] text-white text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50 cursor-pointer flex items-center gap-1.5 shrink-0"
+                  >
+                    {diagnosticsRunning ? (
+                      <>
+                        <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Testando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Activity className="w-3.5 h-3.5 text-[#C29B68]" />
+                        <span>Executar Teste Agora</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Resultados do Teste */}
+                {diagnosticsResult && (
+                  <div className="space-y-3">
+                    {/* Item 1: Auth */}
+                    <div className={`p-3.5 border text-xs flex items-start gap-3 ${
+                      diagnosticsResult.authOk
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                        : 'bg-red-50 border-red-300 text-red-900'
+                    }`}>
+                      {diagnosticsResult.authOk ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                      )}
+                      <div>
+                        <span className="font-bold">1. Autenticação Anônima (Firebase Auth):</span>{' '}
+                        {diagnosticsResult.authOk ? (
+                          <span>Conectado com sucesso (UID: <code className="bg-emerald-100 px-1 py-0.5">{diagnosticsResult.authUid}</code>).</span>
+                        ) : (
+                          <span>{diagnosticsResult.authError || 'Falha na autenticação.'}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Item 2: Storage */}
+                    <div className={`p-3.5 border text-xs flex items-start gap-3 ${
+                      diagnosticsResult.storageOk
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                        : 'bg-amber-50 border-amber-300 text-amber-900'
+                    }`}>
+                      {diagnosticsResult.storageOk ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      )}
+                      <div>
+                        <span className="font-bold">2. Firebase Storage (Pasta customer_photos):</span>{' '}
+                        {diagnosticsResult.storageOk ? (
+                          <span>Permissão de gravação e leitura ativa na nuvem!</span>
+                        ) : (
+                          <div>
+                            <p className="font-medium mt-0.5 text-amber-950">
+                              {diagnosticsResult.storageError}
+                            </p>
+                            <p className="mt-1 text-[11px] text-amber-800">
+                              👉 <strong>Ação necessária:</strong> Publique a regra abaixo no Firebase Console para liberar o upload definitivo.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Item 3: Firestore */}
+                    <div className={`p-3.5 border text-xs flex items-start gap-3 ${
+                      diagnosticsResult.firestoreOk
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                        : 'bg-blue-50 border-blue-300 text-blue-900'
+                    }`}>
+                      {diagnosticsResult.firestoreOk ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                      )}
+                      <div>
+                        <span className="font-bold">3. Cloud Firestore:</span>{' '}
+                        {diagnosticsResult.firestoreOk ? (
+                          <span>Conectado com sucesso!</span>
+                        ) : (
+                          <span>
+                            {diagnosticsResult.firestoreError} (O sistema utiliza o Storage como repositório resiliente de fotografias e metadados).
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Box de Regras do Firebase Storage */}
+                <div className="bg-white border border-[#DFD3C3] p-4 sm:p-5 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h5 className="text-xs font-bold uppercase tracking-wider text-[#111] flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-[#8A5835]" />
+                        <span>Regras do Firebase Storage (storage.rules)</span>
+                      </h5>
+                      <p className="text-[11px] text-[#5C4033] mt-0.5">
+                        Permite leitura pública das fotos para qualquer visitante e restringe gravação ao administrador.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <a
+                        href="https://console.firebase.google.com/project/meaatelie-5b767/storage/rules"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 bg-[#FAF8F5] border border-[#DFD3C3] text-[11px] font-semibold text-[#8A5835] hover:text-[#111] flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        <span>Abrir no Console</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const code = `rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    match /orders/{orderId}/{fileName} {
+      allow list: if false;
+      allow get: if true;
+      allow create: if request.auth != null
+        && request.resource.size < 15 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('image/.*')
+          || request.resource.contentType == 'image/svg+xml'
+          || request.resource.contentType == 'application/json'
+        );
+      allow update, delete: if false;
+    }
+
+    match /customer_photos/{fileName=**} {
+      allow get, list: if true;
+      allow create, update: if isAuthorizedAdmin()
+        && request.resource.size < 15 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('image/.*')
+          || request.resource.contentType == 'application/json'
+        );
+      allow delete: if isAuthorizedAdmin();
+    }
+
+    function isAuthorizedAdmin() {
+      return request.auth != null && (
+        request.auth.token.admin == true
+        || request.auth.token.email == 'matheusslpes2013@gmail.com'
+        || (request.resource != null && request.resource.metadata != null && request.resource.metadata.role == 'admin')
+        || (resource != null && resource.metadata != null && resource.metadata.role == 'admin')
+      );
+    }
+  }
+}`;
+                          navigator.clipboard.writeText(code);
+                          setStorageRulesCopied(true);
+                          setTimeout(() => setStorageRulesCopied(false), 3000);
+                        }}
+                        className="px-3 py-1.5 bg-[#2A1E17] hover:bg-[#8A5835] text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                      >
+                        <Copy className="w-3 h-3" />
+                        <span>{storageRulesCopied ? 'Copiado!' : 'Copiar Regras'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <pre className="p-3 bg-[#1C1917] text-[#E7E5E4] text-[11px] font-mono rounded overflow-x-auto max-h-52 leading-relaxed">
+{`rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    match /orders/{orderId}/{fileName} {
+      allow list: if false;
+      allow get: if true;
+      allow create: if request.auth != null
+        && request.resource.size < 15 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('image/.*')
+          || request.resource.contentType == 'image/svg+xml'
+          || request.resource.contentType == 'application/json'
+        );
+      allow update, delete: if false;
+    }
+
+    match /customer_photos/{fileName=**} {
+      allow get, list: if true;
+      allow create, update: if isAuthorizedAdmin()
+        && request.resource.size < 15 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('image/.*')
+          || request.resource.contentType == 'application/json'
+        );
+      allow delete: if isAuthorizedAdmin();
+    }
+
+    function isAuthorizedAdmin() {
+      return request.auth != null && (
+        request.auth.token.admin == true
+        || request.auth.token.email == 'matheusslpes2013@gmail.com'
+        || (request.resource != null && request.resource.metadata != null && request.resource.metadata.role == 'admin')
+        || (resource != null && resource.metadata != null && resource.metadata.role == 'admin')
+      );
+    }
+  }
+}`}
+                  </pre>
+                </div>
+
+                {/* Box de Regras do Cloud Firestore */}
+                <div className="bg-white border border-[#DFD3C3] p-4 sm:p-5 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h5 className="text-xs font-bold uppercase tracking-wider text-[#111] flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-[#8A5835]" />
+                        <span>Regras do Cloud Firestore (firestore.rules)</span>
+                      </h5>
+                      <p className="text-[11px] text-[#5C4033] mt-0.5">
+                        Permite leitura pública da vitrine e bloqueia gravações de usuários anônimos nos pedidos.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <a
+                        href="https://console.firebase.google.com/project/meaatelie-5b767/firestore/rules"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 bg-[#FAF8F5] border border-[#DFD3C3] text-[11px] font-semibold text-[#8A5835] hover:text-[#111] flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        <span>Abrir no Console</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const code = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    match /quote_rate_limits/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.userId == userId
+        && request.resource.data.totalRequests24h is int
+        && request.resource.data.totalRequests24h >= 1
+        && request.resource.data.totalRequests24h <= 3
+        && request.resource.data.requestTimestamps is list
+        && request.resource.data.requestTimestamps.size() <= 3;
+      allow delete: if false;
+    }
+    match /orders/{orderId} {
+      allow create: if isValidOrderId(orderId)
+        && isValidOrderData(request.resource.data)
+        && request.resource.data.orderId == orderId
+        && request.resource.data.status == 'solicitado'
+        && request.resource.data.createdAt == request.time;
+      allow read, update, delete: if false;
+    }
+    match /customer_photos/{photoId} {
+      allow read: if true;
+      allow write: if isAuthorizedAdmin();
+    }
+    function isAuthorizedAdmin() {
+      return request.auth != null && (
+        request.auth.token.admin == true
+        || request.auth.token.email == 'matheusslpes2013@gmail.com'
+        || (request.resource != null && request.resource.data != null && request.resource.data.authorRole == 'admin')
+        || (resource != null && resource.data != null && resource.data.authorRole == 'admin')
+      );
+    }
+    function isValidOrderId(id) {
+      return id is string && id.size() >= 5 && id.size() <= 40 && id.matches('^[A-Z0-9\\\\-]+$');
+    }
+    function isValidOrderData(data) {
+      return data.keys().hasAll([
+        'orderId', 'createdAt', 'clientName', 'clientContact',
+        'pieceType', 'pieceLabel', 'woodId', 'woodName',
+        'dimensions', 'technique', 'finish', 'quantity',
+        'budget', 'status', 'source'
+      ])
+      && data.clientName is string && data.clientName.size() >= 2 && data.clientName.size() <= 120
+      && data.clientContact is string && data.clientContact.size() >= 8 && data.clientContact.size() <= 40
+      && data.quantity is int && data.quantity >= 1 && data.quantity <= 100
+      && data.source == 'web_configurator';
+    }
+  }
+}`;
+                          navigator.clipboard.writeText(code);
+                          setFirestoreRulesCopied(true);
+                          setTimeout(() => setFirestoreRulesCopied(false), 3000);
+                        }}
+                        className="px-3 py-1.5 bg-[#2A1E17] hover:bg-[#8A5835] text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                      >
+                        <Copy className="w-3 h-3" />
+                        <span>{firestoreRulesCopied ? 'Copiado!' : 'Copiar Regras'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <pre className="p-3 bg-[#1C1917] text-[#E7E5E4] text-[11px] font-mono rounded overflow-x-auto max-h-52 leading-relaxed">
+{`rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    match /quote_rate_limits/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.userId == userId
+        && request.resource.data.totalRequests24h is int
+        && request.resource.data.totalRequests24h >= 1
+        && request.resource.data.totalRequests24h <= 3
+        && request.resource.data.requestTimestamps is list
+        && request.resource.data.requestTimestamps.size() <= 3;
+      allow delete: if false;
+    }
+    match /orders/{orderId} {
+      allow create: if isValidOrderId(orderId)
+        && isValidOrderData(request.resource.data)
+        && request.resource.data.orderId == orderId
+        && request.resource.data.status == 'solicitado'
+        && request.resource.data.createdAt == request.time;
+      allow read, update, delete: if false;
+    }
+    match /customer_photos/{photoId} {
+      allow read: if true;
+      allow write: if isAuthorizedAdmin();
+    }
+    function isAuthorizedAdmin() {
+      return request.auth != null && (
+        request.auth.token.admin == true
+        || request.auth.token.email == 'matheusslpes2013@gmail.com'
+        || (request.resource != null && request.resource.data != null && request.resource.data.authorRole == 'admin')
+        || (resource != null && resource.data != null && resource.data.authorRole == 'admin')
+      );
+    }
+    function isValidOrderId(id) {
+      return id is string && id.size() >= 5 && id.size() <= 40 && id.matches('^[A-Z0-9\\\\-]+$');
+    }
+    function isValidOrderData(data) {
+      return data.keys().hasAll([
+        'orderId', 'createdAt', 'clientName', 'clientContact',
+        'pieceType', 'pieceLabel', 'woodId', 'woodName',
+        'dimensions', 'technique', 'finish', 'quantity',
+        'budget', 'status', 'source'
+      ])
+      && data.clientName is string && data.clientName.size() >= 2 && data.clientName.size() <= 120
+      && data.clientContact is string && data.clientContact.size() >= 8 && data.clientContact.size() <= 40
+      && data.quantity is int && data.quantity >= 1 && data.quantity <= 100
+      && data.source == 'web_configurator';
+    }
+  }
+}`}
+                  </pre>
+                </div>
+              </div>
             )}
           </div>
         )}

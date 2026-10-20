@@ -18,9 +18,11 @@ service firebase.storage {
       allow get: if true;
 
       // 3. Criação de novos arquivos estritamente restrita a:
+      // - Usuário autenticado
       // - Tamanho máximo de 15 MB por arquivo
       // - Tipos de arquivo estritamente verificados: imagens (PNG/JPEG/WEBP), vetores SVG ou relatórios JSON
-      allow create: if request.resource.size < 15 * 1024 * 1024
+      allow create: if request.auth != null
+        && request.resource.size < 15 * 1024 * 1024
         && (
           request.resource.contentType.matches('image/.*')
           || request.resource.contentType == 'image/svg+xml'
@@ -33,16 +35,30 @@ service firebase.storage {
     }
 
     // Galeria de fotografias de clientes do Ateliê:
-    // - Leitura pública para exibição na página inicial e no catálogo (incluindo miniaturas)
-    // - Gravação permitida para usuário autenticado (administrador do Ateliê)
+    // - Leitura e listagem pública para visitantes visualizarem as fotos e miniaturas (inclusive em subpastas)
+    // - Criação, atualização e exclusão restritas ao administrador autorizado
+    // - Rejeita uploads indiscriminados de visitantes anônimos comuns
+    // - Validação estrita: somente imagens até 15 MB e metadados JSON até 1 MB
     match /customer_photos/{fileName=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow get, list: if true;
+      allow create, update: if isAuthorizedAdmin()
+        && request.resource.size < 15 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('image/.*')
+          || request.resource.contentType == 'application/json'
+        );
+      allow delete: if isAuthorizedAdmin();
     }
 
-    match /photos/{fileName=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
+    // Função de verificação do administrador do Atelier:
+    // Exige autenticação e verificação de autorização administrativa
+    function isAuthorizedAdmin() {
+      return request.auth != null && (
+        request.auth.token.admin == true
+        || request.auth.token.email == 'matheusslpes2013@gmail.com'
+        || (request.resource != null && request.resource.metadata != null && request.resource.metadata.role == 'admin')
+        || (resource != null && resource.metadata != null && resource.metadata.role == 'admin')
+      );
     }
   }
 }

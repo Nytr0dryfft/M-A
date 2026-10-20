@@ -214,7 +214,24 @@ export const CustomerPhotosSection: React.FC<CustomerPhotosSectionProps> = ({
   };
 
   useEffect(() => {
-    fetchPhotos();
+    let isMounted = true;
+    const safetyTimer = setTimeout(() => {
+      if (isMounted) {
+        setIsDataLoading(false);
+      }
+    }, 2800);
+
+    fetchPhotos().finally(() => {
+      clearTimeout(safetyTimer);
+      if (isMounted) {
+        setIsDataLoading(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      clearTimeout(safetyTimer);
+    };
   }, []);
 
   useEffect(() => {

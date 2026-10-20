@@ -8,12 +8,8 @@ service cloud.firestore {
     }
 
     // Controle de Cotas e Rate-Limiting por Usuário Autenticado (Atelier M&A)
-    // Impede abusos, robôs e criação de orçamentos infinitos
     match /quote_rate_limits/{userId} {
-      // O usuário pode apenas consultar seu próprio saldo de cota
       allow read: if request.auth != null && request.auth.uid == userId;
-
-      // Criação e atualização com verificação estrita: máximo 3 orçamentos na janela de 24h
       allow create, update: if request.auth != null
         && request.auth.uid == userId
         && request.resource.data.userId == userId
@@ -22,34 +18,36 @@ service cloud.firestore {
         && request.resource.data.totalRequests24h <= 3
         && request.resource.data.requestTimestamps is list
         && request.resource.data.requestTimestamps.size() <= 3;
-
-      // Proibido apagar o registro: o visitante NÃO consegue zerar a cota deletando o documento
       allow delete: if false;
     }
 
     // Regras de Segurança para Orçamentos e Pedidos Sob Medida (Atelier M&A)
     match /orders/{orderId} {
-      // Criação permitida apenas com autenticação e validação rigorosa de campos
       allow create: if isValidOrderId(orderId)
         && isValidOrderData(request.resource.data)
         && request.resource.data.orderId == orderId
         && request.resource.data.status == 'solicitado'
         && request.resource.data.createdAt == request.time;
-
-      // Leitura pública bloqueada para proteger dados de contato e artes autorais dos clientes.
-      // O marceneiro recebe os links diretos autenticados no e-mail ou no WhatsApp.
       allow read: if false;
-
-      // Proibida modificação ou deleção pelo navegador do cliente após o envio
       allow update, delete: if false;
     }
 
     // Galeria Real de Fotos de Clientes cadastradas pelo Administrador
     match /customer_photos/{photoId} {
-      // Leitura pública irrestrita para visitantes visualizarem a galeria documental de clientes
+      // Leitura pública irrestrita para visitantes visualizarem a vitrine documental de clientes
       allow read: if true;
-      // Escrita restrita ao administrador autenticado
-      allow write: if request.auth != null;
+      // Escrita restrita ao administrador autorizado
+      allow write: if isAuthorizedAdmin();
+    }
+
+    // Função de verificação do administrador do Atelier:
+    function isAuthorizedAdmin() {
+      return request.auth != null && (
+        request.auth.token.admin == true
+        || request.auth.token.email == 'matheusslpes2013@gmail.com'
+        || (request.resource != null && request.resource.data != null && request.resource.data.authorRole == 'admin')
+        || (resource != null && resource.data != null && resource.data.authorRole == 'admin')
+      );
     }
 
     // Funções de validação estrita (Anti-Gap e Anti-Poisoning)

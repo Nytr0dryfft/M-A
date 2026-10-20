@@ -161,9 +161,23 @@ export const CustomerPhotosModal: React.FC<CustomerPhotosModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetchPhotos();
+      let isMounted = true;
+      const safetyTimer = setTimeout(() => {
+        if (isMounted) setLoading(false);
+      }, 2800);
+
+      fetchPhotos().finally(() => {
+        clearTimeout(safetyTimer);
+        if (isMounted) setLoading(false);
+      });
+
       setSelectedPhoto(null);
       setFullImageLoaded(false);
+
+      return () => {
+        isMounted = false;
+        clearTimeout(safetyTimer);
+      };
     }
   }, [isOpen]);
 
