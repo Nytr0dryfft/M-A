@@ -260,7 +260,7 @@ export async function loadCustomerPhotos(onlyPublished = false): Promise<Custome
           : query(collection(db, 'customer_photos'));
 
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout Firestore (2.2s)')), 2200)
+          setTimeout(() => reject(new Error('Timeout Firestore (3.5s)')), 3500)
         );
 
         const snap = await Promise.race([getDocs(q), timeoutPromise]);
@@ -896,7 +896,7 @@ export async function testFirebaseDiagnostics(): Promise<{
     const db = getFirebaseFirestore();
     if (db) {
       const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout de consulta ao Firestore (2.5s)')), 2500)
+        setTimeout(() => reject(new Error('Timeout de consulta ao Firestore (3.5s)')), 3500)
       );
       const snap = await Promise.race([
         getDocs(query(collection(db, 'customer_photos'))),

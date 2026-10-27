@@ -1,5 +1,5 @@
 import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, setLogLevel, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 import { getAuth, signInAnonymously, type Auth, type User } from 'firebase/auth';
 import {
@@ -162,9 +162,21 @@ export const getFirebaseFirestore = (): Firestore | null => {
   const app = getFirebaseApp();
   if (!app) return null;
   try {
-    cachedDb = getFirestore(app);
+    // Silencia avisos ruidosos de polling/reconexão interna do SDK
+    try {
+      setLogLevel('silent');
+    } catch {}
+
+    // Força transporte via Long-Polling (HTTP POST) para contornar bloqueios de WebChannel/gRPC em iframes, proxies e ambientes sandboxed
+    cachedDb = initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+    });
   } catch (e) {
-    console.warn('Firestore initialization notice:', e);
+    try {
+      cachedDb = getFirestore(app);
+    } catch (fallbackErr) {
+      console.warn('Firestore initialization notice:', fallbackErr);
+    }
   }
   return cachedDb;
 };

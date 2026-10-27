@@ -8,7 +8,6 @@ import { AnatomySection } from './components/AnatomySection';
 import { WoodCurator } from './components/WoodCurator';
 import { CustomOrderStudio } from './components/CustomOrderStudio';
 import { CustomerPhotosSection } from './components/CustomerPhotosSection';
-import { TestimonialsSection } from './components/TestimonialsSection';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { CartDrawer } from './components/CartDrawer';
 import { CareGuideModal } from './components/CareGuideModal';
@@ -163,9 +162,6 @@ export default function App() {
         <CustomerPhotosSection
           onGoToCustomizer={handleOpenCustomStudio}
         />
-
-        {/* 2.7 Testimonials & Recognition */}
-        <TestimonialsSection />
       </main>
 
       {/* 3. Footer */}

@@ -192,11 +192,13 @@ ${placementText}
 =====================================================
 
 ESTIMATIVA DE INVESTIMENTO:
-  • Peça base + dimensões: R$ ${(frozenOrder.budget.basePrice + frozenOrder.budget.dimensionsAddon).toFixed(2).replace('.', ',')}
-  • Adicional da madeira: R$ ${frozenOrder.budget.woodAddon.toFixed(2).replace('.', ',')}
-  • Técnica / Resina: R$ ${frozenOrder.budget.techniqueAddon.toFixed(2).replace('.', ',')}
-  • Preparação técnica de arte: R$ ${frozenOrder.budget.artPrepFee.toFixed(2).replace('.', ',')}
-  TOTAL ESTIMADO: R$ ${(frozenOrder.budget.totalEstimated * quantity).toFixed(2).replace('.', ',')}
+${frozenOrder.budget.items
+  .map(
+    (item) =>
+      `  • ${item.label}: ${item.value < 0 ? `- R$ ${Math.abs(item.value).toFixed(2).replace('.', ',')}` : `R$ ${item.value.toFixed(2).replace('.', ',')}`}`
+  )
+  .join('\n')}
+  TOTAL ESTIMADO: R$ ${(frozenOrder.budget.totalEstimated * quantity).toFixed(2).replace('.', ',')}${quantity > 1 ? ` (${quantity} un.)` : ''}
 
 DADOS DO CLIENTE:
 Nome: ${clientName}

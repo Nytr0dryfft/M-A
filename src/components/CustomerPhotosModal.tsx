@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Star,
@@ -32,16 +32,45 @@ const ModalPhotoCard: React.FC<{
   photo: CustomerPhoto;
   onSelect: (photo: CustomerPhoto) => void;
 }> = ({ photo, onSelect }) => {
-  const initialUrl = photo.thumbnailUrl || photo.imageUrl;
+  const initialUrl = photo.thumbnailUrl || photo.imageUrl || '';
   const [currentSrc, setCurrentSrc] = useState<string>(initialUrl);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
-    setCurrentSrc(photo.thumbnailUrl || photo.imageUrl);
+    const nextUrl = photo.thumbnailUrl || photo.imageUrl || '';
+    setCurrentSrc(nextUrl);
+    setImageError(!nextUrl);
+
+    if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
+      setImageLoaded(true);
+      return;
+    }
+
     setImageLoaded(false);
-    setImageError(false);
+
+    const watchdogTimer = setTimeout(() => {
+      if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
+        setImageLoaded(true);
+        return;
+      }
+
+      if (nextUrl !== photo.imageUrl && photo.imageUrl) {
+        setCurrentSrc(photo.imageUrl);
+      } else {
+        setImageError(true);
+        setImageLoaded(true);
+      }
+    }, 3500);
+
+    return () => clearTimeout(watchdogTimer);
   }, [photo.thumbnailUrl, photo.imageUrl]);
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    setImageError(false);
+  };
 
   const handleImageError = () => {
     if (currentSrc !== photo.imageUrl && photo.imageUrl) {
@@ -49,6 +78,7 @@ const ModalPhotoCard: React.FC<{
       setImageLoaded(false);
     } else {
       setImageError(true);
+      setImageLoaded(true);
     }
   };
 
@@ -60,22 +90,34 @@ const ModalPhotoCard: React.FC<{
       <div className="relative aspect-[16/10] bg-[#2A1E17] overflow-hidden">
         {/* Skeleton de carregamento */}
         {!imageLoaded && !imageError && (
-          <div className="absolute inset-0 bg-[#2A1E17]/25 animate-pulse flex items-center justify-center">
-            <div className="w-6 h-6 rounded-full border-2 border-[#8A5835]/40 border-t-transparent animate-spin" />
+          <div className="absolute inset-0 bg-[#2A1E17]/35 animate-pulse flex flex-col items-center justify-center gap-1.5">
+            <div className="w-6 h-6 rounded-full border-2 border-[#8A5835] border-t-transparent animate-spin" />
           </div>
         )}
 
-        <img
-          src={currentSrc}
-          alt={photo.title || photo.category}
-          loading="lazy"
-          decoding="async"
-          onLoad={() => setImageLoaded(true)}
-          onError={handleImageError}
-          className={`w-full h-full object-cover group-hover:scale-104 transition-all duration-500 ${
-            imageLoaded ? 'opacity-100' : 'opacity-0'
-          }`}
-        />
+        {imageError ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center bg-[#2A1E17] text-[#FAF8F5]">
+            <Sparkles className="w-5 h-5 text-[#C29B68] mb-1" />
+            <span className="text-[11px] font-semibold">{photo.title || photo.category}</span>
+          </div>
+        ) : (
+          <img
+            ref={(el) => {
+              imgRef.current = el;
+              if (el && el.complete && el.naturalWidth > 0 && !imageLoaded) {
+                setImageLoaded(true);
+              }
+            }}
+            src={currentSrc}
+            alt={photo.title || photo.category}
+            loading="eager"
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+            className={`w-full h-full object-cover group-hover:scale-104 transition-all duration-500 ${
+              imageLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+        )}
 
         <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-[#111111]/85 backdrop-blur-md text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 z-10">
           {photo.category}

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { CustomerPhotosModal, PhotoCategory } from './CustomerPhotosModal';
 import { InfiniteSpecsMarquee } from './InfiniteSpecsMarquee';
+import { renderCraftSpecIcon } from './CraftIcons';
 
 interface CatalogSectionProps {
   products: Product[];
@@ -81,34 +82,9 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
     }
   };
 
-  // Helper para renderizar ícone de especificação
+  // Helper para renderizar ícone de especificação com símbolos autorais
   const renderSpecIcon = (name: string) => {
-    switch (name) {
-      case 'Ruler':
-        return <Ruler className="w-3.5 h-3.5 text-[#8A5835]" />;
-      case 'ShieldCheck':
-        return <ShieldCheck className="w-3.5 h-3.5 text-[#8A5835]" />;
-      case 'Hammer':
-        return <Hammer className="w-3.5 h-3.5 text-[#8A5835]" />;
-      case 'Layers':
-        return <Layers className="w-3.5 h-3.5 text-[#8A5835]" />;
-      case 'Droplets':
-        return <Droplets className="w-3.5 h-3.5 text-[#8A5835]" />;
-      case 'Gift':
-        return <Gift className="w-3.5 h-3.5 text-[#8A5835]" />;
-      case 'TreePine':
-        return <TreePine className="w-3.5 h-3.5 text-[#8A5835]" />;
-      case 'Scissors':
-        return <Scissors className="w-3.5 h-3.5 text-[#8A5835]" />;
-      case 'Lock':
-        return <Lock className="w-3.5 h-3.5 text-[#8A5835]" />;
-      case 'Leaf':
-        return <Leaf className="w-3.5 h-3.5 text-[#8A5835]" />;
-      case 'Truck':
-        return <Truck className="w-3.5 h-3.5 text-[#8A5835]" />;
-      default:
-        return <Sparkles className="w-3.5 h-3.5 text-[#8A5835]" />;
-    }
+    return renderCraftSpecIcon(name, 'w-3.5 h-3.5 text-[#8A5835]');
   };
 
   return (
@@ -120,7 +96,7 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
             <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
               <span className="w-8 h-[2px] bg-[#8A5835]" />
               <span className="text-[11px] sm:text-xs uppercase tracking-[0.25em] text-[#8A5835] font-bold">
-                Coleções Autorais 2025
+                Coleções Autorais 2026
               </span>
             </div>
             <h2 className="font-serif text-2xl sm:text-4xl 2xl:text-5xl text-[#111111] font-bold tracking-tight">
@@ -248,9 +224,24 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
                         {/* Grade alinhada no desktop */}
                         <ul className="hidden sm:grid sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3 text-xs text-[#3E2D22] mb-4 sm:mb-6 py-2.5 sm:py-4 border-y border-[#DFD3C3]/60">
                           {product.specs.map((spec, i) => (
-                            <li key={i} className="flex items-center gap-1.5 sm:gap-2">
-                              {renderSpecIcon(spec.icon)}
-                              <span className="truncate text-[11px] sm:text-xs">{spec.value}</span>
+                            <li
+                              key={i}
+                              className="flex items-center gap-1.5 sm:gap-2 min-w-0"
+                              title={spec.label ? `${spec.label}: ${spec.value}` : spec.value}
+                            >
+                              <span className="p-1 rounded bg-[#FAF3EA] border border-[#DFD3C3]/70 flex items-center justify-center shrink-0">
+                                {renderSpecIcon(spec.icon)}
+                              </span>
+                              <div className="flex flex-col min-w-0">
+                                {spec.label && (
+                                  <span className="text-[9px] uppercase tracking-wider text-[#8A5835] font-bold leading-none truncate">
+                                    {spec.label}
+                                  </span>
+                                )}
+                                <span className="truncate text-[11px] sm:text-xs text-[#2A1E17] font-semibold leading-tight">
+                                  {spec.value}
+                                </span>
+                              </div>
                             </li>
                           ))}
                         </ul>
@@ -440,9 +431,24 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
                         {/* Grade alinhada no desktop */}
                         <ul className="hidden sm:grid sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3 text-xs text-[#3E2D22] mb-4 sm:mb-6 py-2.5 sm:py-4 border-y border-[#DFD3C3]/60">
                           {product.specs.map((spec, i) => (
-                            <li key={i} className="flex items-center gap-1.5 sm:gap-2">
-                              {renderSpecIcon(spec.icon)}
-                              <span className="truncate text-[11px] sm:text-xs">{spec.value}</span>
+                            <li
+                              key={i}
+                              className="flex items-center gap-1.5 sm:gap-2 min-w-0"
+                              title={spec.label ? `${spec.label}: ${spec.value}` : spec.value}
+                            >
+                              <span className="p-1 rounded bg-[#FAF3EA] border border-[#DFD3C3]/70 flex items-center justify-center shrink-0">
+                                {renderSpecIcon(spec.icon)}
+                              </span>
+                              <div className="flex flex-col min-w-0">
+                                {spec.label && (
+                                  <span className="text-[9px] uppercase tracking-wider text-[#8A5835] font-bold leading-none truncate">
+                                    {spec.label}
+                                  </span>
+                                )}
+                                <span className="truncate text-[11px] sm:text-xs text-[#2A1E17] font-semibold leading-tight">
+                                  {spec.value}
+                                </span>
+                              </div>
                             </li>
                           ))}
                         </ul>

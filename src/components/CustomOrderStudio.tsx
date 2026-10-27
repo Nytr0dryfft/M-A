@@ -45,6 +45,7 @@ import { AVAILABLE_FONTS } from '../data/fonts';
 import { InteractiveBoardCanvas } from './configurator/InteractiveBoardCanvas';
 import { QuoteReviewModal } from './configurator/QuoteReviewModal';
 import { VectorizeModal } from './configurator/VectorizeModal';
+import { calculateBudgetBreakdown } from '../services/pricingService';
 
 // Opção Única e Exclusiva de Técnica de Usinagem CNC do Atelier
 const CNC_TECHNIQUES: CncTechniqueOption[] = [
@@ -52,8 +53,8 @@ const CNC_TECHNIQUES: CncTechniqueOption[] = [
     id: 'baixo_relevo_resina',
     name: 'Rebaixo com relevo de resina',
     shortDesc: 'Trabalhamos com até duas cores de resina na mesma peça.',
-    badge: 'Padrão do Atelier · Impermeável',
-    priceModifier: 15.0,
+    badge: 'Padrão do Atelier · Inclusa no Preço-Base',
+    priceModifier: 0.0,
     applicableTo: ['tabua_carne', 'porta_copos'],
     isResin: true,
   },
@@ -663,108 +664,20 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
     };
   }, [elements, lengthCm, widthCm, isPortaCopos]);
 
-  // 10. Cálculo Dinâmico do Orçamento do Atelier
+  // 10. Cálculo Dinâmico do Orçamento do Atelier (Centralizado & Oficial)
   const budgetBreakdown: BudgetBreakdown = useMemo(() => {
-    if (isPortaCopos) {
-      let base = 25.0;
-      let techniqueAddon = currentTechnique.isResin ? 5.0 : 0.0;
-      let woodAddon = 0.0;
-      if (woodType.toLowerCase().includes('macaranduba') || woodType.toLowerCase().includes('maçaranduba')) {
-        woodAddon = 5.0;
-      } else if (woodType.toLowerCase().includes('angelim')) {
-        woodAddon = 3.0;
-      }
-
-      const total = Math.max(25.0, Math.min(35.0, base + techniqueAddon + woodAddon));
-
-      return {
-        basePrice: 25.0,
-        dimensionsAddon: 0.0,
-        woodAddon,
-        techniqueAddon,
-        finishAddon: currentFinish.priceModifier,
-        artPrepFee: 0.0,
-        totalEstimated: total,
-        items: [
-          { label: 'Porta-Copos Maciço (Unidade)', description: 'Madeira usinada em CNC', value: base },
-          ...(woodAddon > 0
-            ? [{ label: `Madeira Nobre (${woodType})`, description: 'Espécie com alta densidade', value: woodAddon }]
-            : []),
-          ...(techniqueAddon > 0
-            ? [{ label: 'Resina Epóxi Atóxica', description: 'Acabamento culinário de alto brilho', value: techniqueAddon }]
-            : []),
-        ],
-      };
-    }
-
-    // Tábua de Carne (base de R$ 149,90 a R$ 209,90)
-    const minVol = 35 * 20; // 700 cm2
-    const maxVol = 50 * 29; // 1450 cm2
-    const curVol = lengthCm * widthCm;
-    const volFactor = Math.min(1, Math.max(0, (curVol - minVol) / (maxVol - minVol)));
-
-    const basePrice = 149.9;
-    const dimensionsAddon = +(volFactor * 35).toFixed(2);
-
-    let woodAddon = 0.0;
-    if (woodType.toLowerCase().includes('macaranduba') || woodType.toLowerCase().includes('maçaranduba')) {
-      woodAddon = 15.0;
-    } else if (woodType.toLowerCase().includes('angelim')) {
-      woodAddon = 10.0;
-    }
-
-    const techniqueAddon = currentTechnique.isResin ? 15.0 : 0.0;
-
-    // Taxa de preparação para artes raster complexas que exigem vetorização manual (R$ 20, ou 0 se apenas texto/vetor)
-    const artPrepFee = technicalAnalysis.needsVectorization ? 20.0 : 0.0;
-
-    const rawTotal = basePrice + dimensionsAddon + woodAddon + techniqueAddon + artPrepFee;
-    const totalEstimated = Math.max(149.9, Math.min(229.9, +rawTotal.toFixed(2)));
-
-    const items = [
-      {
-        label: 'Tábua de Carne Maciça (Base)',
-        description: `35x20x${thicknessCm.toFixed(1).replace('.', ',')} cm com canaleta profunda`,
-        value: basePrice,
-      },
-      ...(dimensionsAddon > 0
-        ? [
-            {
-              label: `Dimensões Sob Medida (${lengthCm}x${widthCm}x${thicknessCm.toFixed(1).replace('.', ',')} cm)`,
-              description: 'Volume personalizado de madeira maciça',
-              value: dimensionsAddon,
-            },
-          ]
-        : []),
-      ...(woodAddon > 0
-        ? [{ label: `Madeira ${woodType}`, description: 'Espécie nobre de alta durabilidade', value: woodAddon }]
-        : []),
-      ...(techniqueAddon > 0
-        ? [{ label: 'Resina Epóxi Atóxica CNC', description: 'Selagem culinária certificada', value: techniqueAddon }]
-        : []),
-      ...(artPrepFee > 0
-        ? [
-            {
-              label: 'Vetorização Técnica de Imagem',
-              description: 'Preparação do percurso de ferramenta para fresa router',
-              value: artPrepFee,
-            },
-          ]
-        : []),
-    ];
-
-    return {
-      basePrice,
-      dimensionsAddon,
-      woodAddon,
-      techniqueAddon,
-      finishAddon: currentFinish.priceModifier,
-      artPrepFee,
-      totalEstimated,
-      items,
-    };
+    return calculateBudgetBreakdown({
+      pieceType,
+      lengthCm,
+      widthCm,
+      thicknessCm,
+      woodType,
+      technique: currentTechnique,
+      finish: currentFinish,
+      needsVectorization: technicalAnalysis.needsVectorization,
+    });
   }, [
-    isPortaCopos,
+    pieceType,
     lengthCm,
     widthCm,
     thicknessCm,
@@ -1467,7 +1380,9 @@ export const CustomOrderStudio: React.FC<CustomOrderStudioProps> = ({
                       <span className="text-[10px] text-[#5C4033] block">{item.description}</span>
                     </div>
                     <span className="font-mono font-bold text-[#111] shrink-0">
-                      R$ {item.value.toFixed(2).replace('.', ',')}
+                      {item.value < 0
+                        ? `- R$ ${Math.abs(item.value).toFixed(2).replace('.', ',')}`
+                        : `R$ ${item.value.toFixed(2).replace('.', ',')}`}
                     </span>
                   </div>
                 ))}

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Ruler, Hammer, ShieldCheck, Droplets } from 'lucide-react';
+import { renderCraftSpecIcon } from './CraftIcons';
 
 export interface SpecItem {
   icon: string;
@@ -28,18 +28,7 @@ export const InfiniteSpecsMarquee: React.FC<InfiniteSpecsMarqueeProps> = ({
   const autoScrollTimer = useRef<NodeJS.Timeout | null>(null);
 
   const renderIcon = (iconName: string) => {
-    switch (iconName) {
-      case 'Ruler':
-        return <Ruler className="w-4 h-4 text-[#8A5835] shrink-0" />;
-      case 'Hammer':
-        return <Hammer className="w-4 h-4 text-[#8A5835] shrink-0" />;
-      case 'ShieldCheck':
-        return <ShieldCheck className="w-4 h-4 text-[#8A5835] shrink-0" />;
-      case 'Droplets':
-        return <Droplets className="w-4 h-4 text-[#8A5835] shrink-0" />;
-      default:
-        return <span className="w-2 h-2 rounded-full bg-[#8A5835]" />;
-    }
+    return renderCraftSpecIcon(iconName, 'w-4 h-4 text-[#8A5835] shrink-0');
   };
 
   // Avanço automático suave com suporte a pausa por interação
@@ -106,6 +95,11 @@ export const InfiniteSpecsMarquee: React.FC<InfiniteSpecsMarqueeProps> = ({
               {renderIcon(item.icon)}
             </span>
             <div className="flex flex-col">
+              {item.label && (
+                <span className="text-[9px] uppercase tracking-wider text-[#8A5835] font-bold leading-none mb-0.5">
+                  {item.label}
+                </span>
+              )}
               <span className="text-[11px] sm:text-xs font-semibold text-[#2A1E17] whitespace-nowrap">
                 {item.value}
               </span>

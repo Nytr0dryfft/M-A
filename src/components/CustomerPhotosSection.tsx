@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Star,
   Lock,
@@ -33,16 +33,51 @@ const CustomerPhotoCard: React.FC<{
   onGoToCustomizer?: (pieceType?: 'tabua_carne' | 'porta_copos' | 'movel') => void;
   priority?: boolean;
 }> = ({ photo, onSelect, onGoToCustomizer, priority = false }) => {
-  const initialUrl = photo.thumbnailUrl || photo.imageUrl;
+  const initialUrl = photo.thumbnailUrl || photo.imageUrl || '';
   const [currentSrc, setCurrentSrc] = useState<string>(initialUrl);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
-    setCurrentSrc(photo.thumbnailUrl || photo.imageUrl);
+    const nextUrl = photo.thumbnailUrl || photo.imageUrl || '';
+    setCurrentSrc(nextUrl);
+    setImageError(!nextUrl);
+
+    // Verificação síncrona: se já estiver em cache com dimensões válidas, ativa imediatamente
+    if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
+      setImageLoaded(true);
+      return;
+    }
+
     setImageLoaded(false);
-    setImageError(false);
+
+    // Watchdog de segurança: nunca deixa o spinner rodando infinitamente
+    const watchdogTimer = setTimeout(() => {
+      if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
+        setImageLoaded(true);
+        return;
+      }
+
+      // Se a miniatura travou ou falhou, tenta a URL original
+      if (nextUrl !== photo.imageUrl && photo.imageUrl) {
+        setCurrentSrc(photo.imageUrl);
+      } else {
+        // Se a imagem principal não carregou após 3.5 segundos, finaliza estado de espera
+        setImageError(true);
+        setImageLoaded(true);
+      }
+    }, 3500);
+
+    return () => {
+      clearTimeout(watchdogTimer);
+    };
   }, [photo.thumbnailUrl, photo.imageUrl]);
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    setImageError(false);
+  };
 
   const handleImageError = () => {
     // Se a miniatura falhou, tenta carregar diretamente a URL original da foto
@@ -51,7 +86,17 @@ const CustomerPhotoCard: React.FC<{
       setImageLoaded(false);
     } else {
       setImageError(true);
+      setImageLoaded(true);
     }
+  };
+
+  const handleRetry = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setImageError(false);
+    setImageLoaded(false);
+    const targetUrl = photo.imageUrl || photo.thumbnailUrl || '';
+    const separator = targetUrl.includes('?') ? '&' : '?';
+    setCurrentSrc(`${targetUrl}${separator}_t=${Date.now()}`);
   };
 
   return (
@@ -64,28 +109,43 @@ const CustomerPhotoCard: React.FC<{
         >
           {/* Skeleton placeholder enquanto a imagem carrega */}
           {!imageLoaded && !imageError && (
-            <div className="absolute inset-0 bg-[#2A1E17]/25 animate-pulse flex items-center justify-center">
-              <div className="w-7 h-7 rounded-full border-2 border-[#8A5835]/40 border-t-transparent animate-spin" />
+            <div className="absolute inset-0 bg-[#2A1E17]/35 animate-pulse flex flex-col items-center justify-center gap-2 z-10">
+              <div className="w-7 h-7 rounded-full border-2 border-[#8A5835] border-t-transparent animate-spin" />
+              <span className="text-[10px] text-[#DFD3C3]/80 font-medium tracking-wider uppercase">Carregando...</span>
             </div>
           )}
 
-          {/* Mensagem discreta caso ocorra falha na imagem individual */}
+          {/* Mensagem discreta e botão de recarga caso ocorra falha */}
           {imageError ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-[#FAF8F5] text-[#5C4033]">
-              <span className="text-xs font-semibold">Fotografia do Atelier</span>
-              <span className="text-[10px] text-[#8A5835] mt-1">Clique para tentar visualizar</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-[#2A1E17] text-[#FAF8F5]">
+              <Sparkles className="w-6 h-6 text-[#C29B68] mb-1.5" />
+              <span className="text-xs font-semibold">Fotografia M&amp;A Ateliê</span>
+              <span className="text-[11px] text-[#DFD3C3]/80 mt-0.5 line-clamp-1 max-w-[240px]">
+                {photo.title || photo.category}
+              </span>
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="mt-2.5 px-3 py-1 bg-[#8A5835] hover:bg-[#C29B68] text-white text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer rounded-xs"
+              >
+                Recarregar Foto
+              </button>
             </div>
           ) : (
             <img
+              ref={(el) => {
+                imgRef.current = el;
+                if (el && el.complete && el.naturalWidth > 0 && !imageLoaded) {
+                  setImageLoaded(true);
+                }
+              }}
               src={currentSrc}
               alt={photo.title || `Fotografia de peça artesanal M&A - ${photo.category}`}
-              className={`w-full h-full object-cover group-hover:scale-104 transition-all duration-700 ease-out ${
+              className={`w-full h-full object-cover group-hover:scale-104 transition-all duration-500 ease-out ${
                 imageLoaded ? 'opacity-100' : 'opacity-0'
               }`}
-              loading={priority ? 'eager' : 'lazy'}
-              fetchPriority={priority ? 'high' : 'auto'}
-              decoding="async"
-              onLoad={() => setImageLoaded(true)}
+              loading="eager"
+              onLoad={handleImageLoad}
               onError={handleImageError}
             />
           )}
@@ -193,8 +253,32 @@ export const CustomerPhotosSection: React.FC<CustomerPhotosSectionProps> = ({
   const [isDataLoading, setIsDataLoading] = useState<boolean>(() => getCachedCustomerPhotos(true).length === 0);
   const [selectedPhoto, setSelectedPhoto] = useState<CustomerPhoto | null>(null);
   const [lightboxLoaded, setLightboxLoaded] = useState<boolean>(false);
+  const [lightboxError, setLightboxError] = useState<boolean>(false);
+  const lightboxImgRef = useRef<HTMLImageElement | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('todos');
   const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (selectedPhoto) {
+      setLightboxLoaded(false);
+      setLightboxError(false);
+
+      if (lightboxImgRef.current && lightboxImgRef.current.complete && lightboxImgRef.current.naturalWidth > 0) {
+        setLightboxLoaded(true);
+        return;
+      }
+
+      const timer = setTimeout(() => {
+        if (lightboxImgRef.current && lightboxImgRef.current.complete && lightboxImgRef.current.naturalWidth > 0) {
+          setLightboxLoaded(true);
+        } else {
+          setLightboxLoaded(true);
+        }
+      }, 3500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [selectedPhoto]);
 
   // Carrega e revalida fotos reais sem bloquear a interface se já houver cache
   const fetchPhotos = async () => {
@@ -285,7 +369,7 @@ export const CustomerPhotosSection: React.FC<CustomerPhotosSectionProps> = ({
             </div>
 
             <h2 className="font-serif text-2xl sm:text-4xl 2xl:text-5xl text-[#111111] font-bold tracking-tight">
-              Fotos de Clientes
+              Aprovado por Quem Vive a Arte em Madeira
             </h2>
 
             <p className="text-xs sm:text-sm text-[#5C4033] mt-2 leading-relaxed">
@@ -426,20 +510,46 @@ export const CustomerPhotosSection: React.FC<CustomerPhotosSectionProps> = ({
 
               {/* Imagem Ampliada em Alta Resolução */}
               <div className="bg-[#111111] p-2 sm:p-4 flex items-center justify-center overflow-auto max-h-[65vh] min-h-[260px] relative">
-                {!lightboxLoaded && (
+                {!lightboxLoaded && !lightboxError && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#1C1917]/80 text-[#DFD3C3]">
                     <div className="w-8 h-8 rounded-full border-2 border-[#8A5835] border-t-transparent animate-spin" />
                     <span className="text-xs font-semibold">Carregando imagem original...</span>
                   </div>
                 )}
-                <img
-                  src={selectedPhoto.imageUrl}
-                  alt={selectedPhoto.title || selectedPhoto.category}
-                  className={`max-h-[60vh] max-w-full object-contain mx-auto shadow-lg transition-opacity duration-300 ${
-                    lightboxLoaded ? 'opacity-100' : 'opacity-0'
-                  }`}
-                  onLoad={() => setLightboxLoaded(true)}
-                />
+                {lightboxError ? (
+                  <div className="p-8 text-center text-[#DFD3C3]">
+                    <p className="text-xs mb-3 text-[#DFD3C3]/80">Não foi possível carregar a imagem em alta resolução.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLightboxError(false);
+                        setLightboxLoaded(false);
+                      }}
+                      className="px-3 py-1 bg-[#8A5835] text-white text-xs font-semibold hover:bg-[#C29B68] rounded-xs cursor-pointer"
+                    >
+                      Tentar novamente
+                    </button>
+                  </div>
+                ) : (
+                  <img
+                    ref={(el) => {
+                      lightboxImgRef.current = el;
+                      if (el && el.complete && el.naturalWidth > 0 && !lightboxLoaded) {
+                        setLightboxLoaded(true);
+                      }
+                    }}
+                    src={selectedPhoto.imageUrl}
+                    alt={selectedPhoto.title || selectedPhoto.category}
+                    className={`max-h-[60vh] max-w-full object-contain mx-auto shadow-lg transition-opacity duration-300 ${
+                      lightboxLoaded ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    onLoad={() => setLightboxLoaded(true)}
+                    onError={() => {
+                      setLightboxError(true);
+                      setLightboxLoaded(true);
+                    }}
+                  />
+                )}
               </div>
 
               {/* Informações Reais da Foto */}

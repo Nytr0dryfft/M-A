@@ -22,7 +22,7 @@ export const ATELIER_CONTACT = {
   email: 'matheuseamarildo@gmail.com',
 
   // Instagram Oficial do Ateliê
-  instagramUrl: 'https://www.instagram.com/ma.ateliedemarcenaria?cplk=ZWt0eDRtOXhtdHhw',
+  instagramUrl: 'https://www.instagram.com/ma.ateliedemarcenaria?vrfl=ZWt0eDRtOXhtdHhw',
   instagramHandle: '@ma.ateliedemarcenaria',
 
   // Mensagem padrão para início de conversa no WhatsApp

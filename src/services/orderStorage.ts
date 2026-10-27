@@ -118,7 +118,10 @@ export async function getOrderFromStore(
     try {
       const db = getFirebaseFirestore();
       if (db) {
-        const orderSnap = await getDoc(doc(db, 'orders', cleanId));
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout na consulta de pedido')), 3500)
+        );
+        const orderSnap = await Promise.race([getDoc(doc(db, 'orders', cleanId)), timeoutPromise]);
         if (orderSnap.exists()) {
           const data = orderSnap.data() as any;
 

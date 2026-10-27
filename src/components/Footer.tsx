@@ -32,17 +32,15 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
 
             <p className="text-xs text-[#DFD3C3]/80 leading-relaxed max-w-sm">
-              Atelier de marcenaria fina especializada em pequenos móveis esculturais e tábuas
-              gastronômicas de precisão em grão de topo. Valorizamos o tempo e a fibra natural de
-              árvores nobres brasileiras.
+              Ateliê de marcenaria fina especializado em pequenos móveis esculturais e tábuas gastronômicas de precisão. Valorizamos o tempo, a técnica artesanal e a beleza natural das madeiras brasileiras.
             </p>
 
             <div className="flex items-center gap-2.5 sm:gap-3 pt-1 sm:pt-2">
               <a
-                href="https://instagram.com"
+                href={ATELIER_CONTACT.instagramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Instagram da M&A"
+                aria-label="Instagram oficial da M&A Ateliê de Marcenaria"
                 className="w-8 h-8 sm:w-9 sm:h-9 bg-[#2A1E17] hover:bg-[#8A5835] text-white flex items-center justify-center transition-colors"
               >
                 <Instagram className="w-4 h-4" />
@@ -155,7 +153,7 @@ export const Footer: React.FC<FooterProps> = ({
 
         {/* Bottom bar */}
         <div className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-[#2A1E17]/80 flex flex-col sm:flex-row items-center justify-between text-[10px] sm:text-[11px] text-[#DFD3C3]/60 gap-3 sm:gap-4">
-          <span className="text-center sm:text-left">© 2025 M&amp;A Atelier &amp; Marcenaria Autoral. Todos os direitos reservados.</span>
+          <span className="text-center sm:text-left">© 2026 M&amp;A Atelier &amp; Marcenaria Autoral. Todos os direitos reservados.</span>
           <div className="flex flex-wrap gap-3 sm:gap-6 items-center justify-center">
             <button
               onClick={onOpenCareGuide}
