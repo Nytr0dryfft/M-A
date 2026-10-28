@@ -18,6 +18,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [selectedAddon, setSelectedAddon] = useState<string>('cera_extra');
   const [added, setAdded] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
+  const [activeImgIndex, setActiveImgIndex] = useState(0);
+
+  const images = product
+    ? product.images && product.images.length > 0
+      ? product.images
+      : product.secondaryImageUrl
+      ? [product.imageUrl, product.secondaryImageUrl]
+      : [product.imageUrl]
+    : [];
+
+  const currentModalImage = images[activeImgIndex] || product?.imageUrl || '';
 
   const handleAdd = () => {
     if (!product) return;
@@ -49,7 +60,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <div className="p-6 sm:p-8 bg-[#2A1E17] text-[#FAF8F5] flex flex-col justify-between">
               <div>
                 <div 
-                  className={`relative overflow-hidden aspect-[4/3] bg-black/50 border border-[#DFD3C3]/20 mb-4 group ${
+                  className={`relative overflow-hidden aspect-[4/3] bg-black/50 border border-[#DFD3C3]/20 mb-3 group ${
                     product.imageFit === 'contain' ? 'flex items-center justify-center cursor-pointer' : ''
                   }`}
                   onClick={() => product.imageFit === 'contain' && setShowImagePreview(true)}
@@ -59,13 +70,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <>
                       {/* Fundo suave desfocado para evitar cortes e preencher barras */}
                       <img
-                        src={product.imageUrl}
+                        src={currentModalImage}
                         alt=""
                         aria-hidden="true"
                         className="absolute inset-0 w-full h-full object-cover blur-xl scale-125 opacity-35 brightness-75 pointer-events-none select-none"
                       />
                       <img
-                        src={product.imageUrl}
+                        src={currentModalImage}
                         alt={product.name}
                         className="relative z-10 max-h-full max-w-full object-contain p-2 sm:p-3 transition-transform duration-500 group-hover:scale-103 drop-shadow-md"
                         referrerPolicy="no-referrer"
@@ -73,7 +84,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </>
                   ) : (
                     <img
-                      src={product.imageUrl}
+                      src={currentModalImage}
                       alt={product.name}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       referrerPolicy="no-referrer"
@@ -101,6 +112,30 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </span>
                   )}
                 </div>
+
+                {/* Seletores de Miniatura se houver múltiplas fotos */}
+                {images.length > 1 && (
+                  <div className="flex items-center gap-2 mb-4">
+                    {images.map((img, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setActiveImgIndex(i)}
+                        className={`w-14 h-10 rounded-xs overflow-hidden border-2 transition-all cursor-pointer ${
+                          activeImgIndex === i
+                            ? 'border-[#C29B68] scale-105 ring-1 ring-[#C29B68]'
+                            : 'border-white/20 opacity-60 hover:opacity-100'
+                        }`}
+                        title={`Ver foto ${i + 1}`}
+                      >
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                    <span className="text-[10px] text-[#DFD3C3]/70 ml-1">
+                      Foto {activeImgIndex + 1} de {images.length}
+                    </span>
+                  </div>
+                )}
 
               {/* Laser Simulation Control Box */}
               <div className="p-4 bg-[#1C1917] border border-[#DFD3C3]/20 space-y-3">
@@ -232,7 +267,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         >
           <div className="relative max-w-4xl max-h-[90vh]">
             <img
-              src={product.imageUrl}
+              src={currentModalImage}
               alt={product.name}
               className="max-h-[85vh] max-w-full object-contain"
             />

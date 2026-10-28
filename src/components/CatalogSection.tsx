@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product } from '../types';
 import {
   Utensils,
@@ -22,6 +22,8 @@ import {
   Camera,
   ZoomIn,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { CustomerPhotosModal, PhotoCategory } from './CustomerPhotosModal';
 import { InfiniteSpecsMarquee } from './InfiniteSpecsMarquee';
@@ -36,6 +38,135 @@ interface CatalogSectionProps {
 }
 
 type CatalogFilter = 'all' | 'tabuas' | 'moveis';
+
+interface ProductRotatingImageProps {
+  product: Product;
+  onPreview: (url: string, title: string) => void;
+}
+
+const ProductRotatingImage: React.FC<ProductRotatingImageProps> = ({ product, onPreview }) => {
+  const images = product.images && product.images.length > 0
+    ? product.images
+    : product.secondaryImageUrl
+    ? [product.imageUrl, product.secondaryImageUrl]
+    : [product.imageUrl];
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Rotação automática suave a cada 4 segundos
+  useEffect(() => {
+    if (images.length <= 1 || isHovered) return;
+
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    }, 4000);
+
+    return () => clearInterval(timer);
+  }, [images.length, isHovered]);
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const currentImage = images[currentIndex] || product.imageUrl;
+
+  return (
+    <div
+      className="relative overflow-hidden aspect-[16/10] bg-[#2A1E17] group/img"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Imagens com transição suave de opacidade */}
+      {images.map((img, idx) => (
+        <img
+          key={img}
+          src={img}
+          alt={`${product.name} - Foto ${idx + 1}`}
+          className={`absolute inset-0 w-full h-full object-cover group-hover:scale-108 transition-all duration-700 ease-out will-change-transform cursor-pointer ${
+            idx === currentIndex ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
+          }`}
+          onClick={() => onPreview(currentImage, product.name)}
+          referrerPolicy="no-referrer"
+          loading="eager"
+        />
+      ))}
+
+      {product.badge && (
+        <span className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20 bg-[#111111]/90 backdrop-blur-md text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 sm:px-3 sm:py-1.5 pointer-events-none">
+          {product.badge}
+        </span>
+      )}
+      {product.highlightTag && (
+        <span className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 bg-[#C29B68] text-[#111111] text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 sm:px-3 sm:py-1 shadow pointer-events-none">
+          {product.highlightTag}
+        </span>
+      )}
+
+      {/* Botão de Ampliação */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onPreview(currentImage, product.name);
+        }}
+        className="absolute bottom-3 right-3 z-20 bg-black/75 hover:bg-black text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 flex items-center gap-1.5 backdrop-blur-xs transition-colors border border-white/10 cursor-pointer"
+        title="Ampliar foto em alta resolução"
+      >
+        <ZoomIn className="w-3.5 h-3.5 text-[#C29B68]" />
+        <span>Ampliar</span>
+      </button>
+
+      {/* Controles de rotação se houver mais de uma foto */}
+      {images.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={handlePrev}
+            aria-label="Foto anterior"
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all opacity-0 group-hover/img:opacity-100 sm:opacity-75 cursor-pointer backdrop-blur-xs shadow-md"
+          >
+            <ChevronLeft className="w-4 h-4 text-white" />
+          </button>
+          <button
+            type="button"
+            onClick={handleNext}
+            aria-label="Próxima foto"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all opacity-0 group-hover/img:opacity-100 sm:opacity-75 cursor-pointer backdrop-blur-xs shadow-md"
+          >
+            <ChevronRight className="w-4 h-4 text-white" />
+          </button>
+
+          {/* Indicadores de bolinhas na barra inferior */}
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-black/60 backdrop-blur-xs px-2.5 py-1 rounded-full border border-white/10">
+            {images.map((_, dotIdx) => (
+              <button
+                key={dotIdx}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentIndex(dotIdx);
+                }}
+                aria-label={`Rotacionar para imagem ${dotIdx + 1}`}
+                className={`transition-all duration-300 rounded-full cursor-pointer ${
+                  dotIdx === currentIndex
+                    ? 'w-5 h-1.5 bg-[#C29B68]'
+                    : 'w-1.5 h-1.5 bg-white/60 hover:bg-white'
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 export const CatalogSection: React.FC<CatalogSectionProps> = ({
   products,
@@ -174,27 +305,11 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
                     className="bg-[#FAF8F5] border border-[#DFD3C3]/80 shadow-lg group hover:shadow-2xl transition-all duration-300 flex flex-col justify-between overflow-hidden"
                   >
                     <div>
-                      {/* Caixa de Imagem */}
-                      <div className="relative overflow-hidden aspect-[16/10] bg-[#2A1E17]">
-                        <img
-                          src={product.imageUrl}
-                          alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out will-change-transform cursor-pointer"
-                          onClick={() => setPreviewImage({ url: product.imageUrl, title: product.name })}
-                          referrerPolicy="no-referrer"
-                        />
-
-                        {product.badge && (
-                          <span className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20 bg-[#111111]/90 backdrop-blur-md text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 sm:px-3 sm:py-1.5">
-                            {product.badge}
-                          </span>
-                        )}
-                        {product.highlightTag && (
-                          <span className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 bg-[#C29B68] text-[#111111] text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 sm:px-3 sm:py-1 shadow">
-                            {product.highlightTag}
-                          </span>
-                        )}
-                      </div>
+                      {/* Caixa de Imagem com Rotação Automática e Interativa */}
+                      <ProductRotatingImage
+                        product={product}
+                        onPreview={(url, title) => setPreviewImage({ url, title })}
+                      />
 
                       {/* Conteúdo Informativo */}
                       <div className="p-4 sm:p-9 xl:p-10">

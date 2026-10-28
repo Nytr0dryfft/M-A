@@ -1,6 +1,7 @@
 import { Product } from '../types';
 import { ATELIER_WOODS_LIST } from './woods';
 import tabuaPersonalizadaImg from '../assets/images/tabua-personalizada.png';
+import tabuaCervoImg from '../assets/images/tabua-cervo.png';
 import portaCoposImg from '../assets/images/porta-copos-personalizados.jpg';
 import banquetaImg from '../assets/images/banqueta.png';
 import mesaImg from '../assets/images/mesa.png';
@@ -27,7 +28,9 @@ export const PRODUCTS: Product[] = [
       { label: 'Gravação', value: 'Entalhe de precisão por CNC', icon: 'Hammer' },
       { label: 'Tratamento', value: 'Tratamento em resina atóxica', icon: 'Droplets' },
     ],
-    imageUrl: tabuaPersonalizadaImg,
+    imageUrl: tabuaCervoImg,
+    secondaryImageUrl: tabuaPersonalizadaImg,
+    images: [tabuaCervoImg, tabuaPersonalizadaImg],
     inStock: true,
     joineryType: 'Usinagem de precisão em router CNC com preenchimento em resina epóxi atóxica certificada para alimentos',
     finishType: 'Resina atóxica na área do brasão, selagem em óleo mineral farmacêutico USP e cera virgem de abelha silvestre',
@@ -91,7 +94,7 @@ export const PRODUCTS: Product[] = [
     badge: '100% Madeira de Pinus',
     highlightTag: 'Cozinha & Jantar',
     woods: 'Pinus com Tratamento em Resina',
-    price: 400,
+    price: 300,
     weight: '18 kg',
     dimensions: '140 x 80 x 76 cm',
     description:

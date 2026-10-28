@@ -20,6 +20,7 @@ export interface Product {
   }[];
   imageUrl: string;
   secondaryImageUrl?: string;
+  images?: string[];
   inStock: boolean;
   joineryType: string;
   finishType: string;
